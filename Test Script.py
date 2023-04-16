@@ -12,3 +12,4 @@ def power(a,b):
 print(add(3,4))
 print(multiply(3,4))
 print(power(3,4))
+print("hello :3")
