@@ -7,7 +7,7 @@ def multiply(a,b):
     return a*b
 
 def power(a,b):
-    pass
+    return a**b
 
 print(add(3,4))
 print(multiply(3,4))
