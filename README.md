@@ -1,2 +1,2 @@
-This is a Project by 3 good-looking DTU students in self-supervised learning for time-series data.
+This is a Project in self-supervised learning for time-series data by 3 good-looking DTU git-wizzes.
 Christian, Daniel and Kavus.
