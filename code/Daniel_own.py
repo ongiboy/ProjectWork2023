@@ -4,6 +4,7 @@ import numpy as np
 import math
 from augmentations import *
 import torch.fft as fft
+from augmentations import DataTransform_FD, DataTransform_TD
 
 
 sleep_data = torch.load("C:/Users/danie/TFC-pretraining/datasets/SleepEEG/train.pt")
