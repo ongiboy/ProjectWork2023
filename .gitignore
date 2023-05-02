@@ -1,3 +1,3 @@
 datasets
-__pycache__
-experiment_logs\**
+**/__pycache__/
+/experiments_logs**
