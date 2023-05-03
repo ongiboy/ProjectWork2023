@@ -19,7 +19,6 @@ start_time = datetime.now()
 parser = argparse.ArgumentParser()
 
 ######################## Model parameters ########################
-os.chdir(os.path.abspath('..'))
 home_dir = os.getcwd()
 
 # parser.add_argument('--experiment_description', default='Exp1', type=str,
