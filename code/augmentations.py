@@ -33,9 +33,9 @@ def DataTransform_TD(sample, config):
     aug_2 = scaling(sample, config.augmentation.jitter_scale_ratio)
     aug_3 = permutation(sample, max_segments=config.augmentation.max_seg)
 
-    li = np.random.randint(0, 4, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+    li = np.random.randint(0, 4, size=[sample.shape[0]]) # different augmentations for different channels 
     li_onehot = one_hot_encoding(li)
-    aug_1[1-li_onehot[:, 0]] = 0 # the rows are not selected are set as zero.
+    aug_1[1-li_onehot[:, 0]] = 0 # the rows not selected are set as zero.
     aug_2[1 - li_onehot[:, 1]] = 0
     aug_3[1 - li_onehot[:, 2]] = 0
     # aug_4[1 - li_onehot[:, 3]] = 0
