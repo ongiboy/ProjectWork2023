@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 import random
+import matplotlib.pyplot as plt
+import tensorflow as tf
 
 def one_hot_encoding(X):
     X = [int(x) for x in X]
@@ -29,17 +31,22 @@ def DataTransform(sample, config):
 #     return weak_aug, strong_aug
 def DataTransform_TD(sample, config):
     """Weak and strong augmentations"""
+    #plt.plot(sample[3][0])
     aug_1 = jitter(sample, config.augmentation.jitter_ratio)
+    #plt.plot(aug_1[0][0])
     aug_2 = scaling(sample, config.augmentation.jitter_scale_ratio)
+    #plt.plot(aug_2[0][0])
     aug_3 = permutation(sample, max_segments=config.augmentation.max_seg)
+    #plt.plot(aug_3[0][0])
 
-    li = np.random.randint(0, 4, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+    li = np.random.randint(0, 3, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
     li_onehot = one_hot_encoding(li)
-    aug_1[1-li_onehot[:, 0]] = 0 # the rows are not selected are set as zero.
-    aug_2[1 - li_onehot[:, 1]] = 0
-    aug_3[1 - li_onehot[:, 2]] = 0
+    aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
+    aug_2[li_onehot[:, 1]==0] = 0
+    aug_3[li_onehot[:, 2]==0] = 0
     # aug_4[1 - li_onehot[:, 3]] = 0
     aug_T = aug_1 + aug_2 + aug_3 #+aug_4
+    #plt.plot(aug_T[3][0])
     return aug_T
 
 
@@ -50,9 +57,11 @@ def DataTransform_FD(sample, config):
     # generate random sequence
     li = np.random.randint(0, 2, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
     li_onehot = one_hot_encoding(li)
-    aug_1[1-li_onehot[:, 0]] = 0 # the rows are not selected are set as zero.
-    aug_2[1 - li_onehot[:, 1]] = 0
+    aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
+    aug_2[li_onehot[:, 1]==0] = 0
     aug_F = aug_1 + aug_2
+    plt.plot(sample[0][0])
+    plt.plot(aug_F[0][0])
     return aug_F
 
 
@@ -94,7 +103,7 @@ def scaling(x, sigma=1.1):
     for i in range(x.shape[1]):
         xi = x[:, i, :]
         ai.append(np.multiply(xi, factor[:, :])[:, np.newaxis, :])
-    return np.concatenate((ai), axis=1)
+    return torch.from_numpy(np.concatenate((ai), axis=1))
 
 def permutation(x, max_segments=5, seg_mode="random"):
     orig_steps = np.arange(x.shape[2])
@@ -123,10 +132,11 @@ def remove_frequency(x, maskout_ratio=0):
     return x*mask
 
 def add_frequency(x, pertub_ratio=0):
-
     mask = torch.FloatTensor(x.shape).uniform_() > (1-pertub_ratio) # only pertub_ratio of all values are True
     mask = mask.to(x.device)
-    max_amplitude = x.max()
-    random_am = torch.rand(mask.shape)*(max_amplitude*0.5)
+    max_amplitudes = torch.max(x, axis=2, keepdim=True)[0]
+    max_amplitudes = max_amplitudes.repeat(1, 1, x.shape[2])
+    #max_amplitude = x.max()
+    random_am = torch.rand(mask.shape)*(max_amplitudes*0.5)
     pertub_matrix = mask*random_am
     return x+pertub_matrix
