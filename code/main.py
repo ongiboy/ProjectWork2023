@@ -110,17 +110,17 @@ classifier = target_classifier(configs).to(device)
 temporal_contr_model = None #TC(configs, device).to(device)
 
 
-# if training_mode == "fine_tune_test":
-#     # load saved model of this experiment
-#     load_from = os.path.join(os.path.join(logs_save_dir, experiment_description, run_description,
-#     f"pre_train_seed_{SEED}", "saved_models")) # 'experiments_logs/Exp1/run1/self_supervised_seed_0/saved_models'
-#     chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=device) # two saved models: ['model_state_dict', 'temporal_contr_model_state_dict']
-#
-#     pretrained_dict = chkpoint["model_state_dict"] # Time domain parameters
-#     model_dict = TFC_model.state_dict()
-#     # pretrained_dict = remove_logits(pretrained_dict)
-#     model_dict.update(pretrained_dict)
-#     TFC_model.load_state_dict(model_dict)
+""" if training_mode == "fine_tune_test":
+    # load saved model of this experiment
+    load_from = os.path.join(os.path.join(logs_save_dir, experiment_description, run_description,
+    f"pre_train_seed_{SEED}", "saved_models")) # 'experiments_logs/Exp1/run1/self_supervised_seed_0/saved_models'
+    chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=device) # two saved models: ['model_state_dict', 'temporal_contr_model_state_dict']
+    
+    pretrained_dict = chkpoint["model_state_dict"] # Time domain parameters
+    model_dict = TFC_model.state_dict()
+    # pretrained_dict = remove_logits(pretrained_dict)
+    model_dict.update(pretrained_dict)
+    TFC_model.load_state_dict(model_dict) """
 
 
 model_optimizer = torch.optim.Adam(TFC_model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
