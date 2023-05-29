@@ -19,10 +19,8 @@ start_time = datetime.now()
 parser = argparse.ArgumentParser()
 
 ######################## Model parameters ########################
-os.chdir(os.path.abspath('..'))
-
 home_dir = os.getcwd()
-print(home_dir)
+
 # parser.add_argument('--experiment_description', default='Exp1', type=str,
 #                     help='Experiment Description')
 parser.add_argument('--run_description', default='run1', type=str,
@@ -30,7 +28,7 @@ parser.add_argument('--run_description', default='run1', type=str,
 parser.add_argument('--seed', default=0, type=int, help='seed value')
 
 # 1. self_supervised; 2. finetune (itself contains finetune and test)
-parser.add_argument('--training_mode', default='fine_tune_test', type=str,
+parser.add_argument('--training_mode', default='pre_train', type=str,
                     help='pre_train, fine_tune_test')
 
 parser.add_argument('--pretrain_dataset', default='SleepEEG', type=str,
