@@ -1,4 +1,4 @@
-name: requirements1
+name: requirements
 channels:
   - pytorch
   - conda-forge
