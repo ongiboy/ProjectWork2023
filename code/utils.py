@@ -85,13 +85,15 @@ def _logger(logger_name, level=logging.DEBUG):
 
 def copy_Files(destination, data_type):
     # destination: 'experiments_logs/Exp1/run1'
-    destination_dir = os.path.join(destination, "model_files")
+    cwd = os.getcwd()  # Current working directory
+    destination_dir = os.path.join(destination, "model_files")  # Destination directory
     os.makedirs(destination_dir, exist_ok=True)
-    copy("main.py", os.path.join(destination_dir, "main.py"))
-    copy("trainerfun/trainer.py", os.path.join(destination_dir, "trainerfun.py"))
-    copy(f"config_files/{data_type}_Configs.py", os.path.join(destination_dir, f"{data_type}_Configs.py"))
-    copy("dataloader/augmentations.py", os.path.join(destination_dir, "augmentations.py"))
-    copy("dataloader/dataloader.py", os.path.join(destination_dir, "dataloader.py"))
-    copy(f"models/model.py", os.path.join(destination_dir, f"model.py"))
-    copy("models/loss.py", os.path.join(destination_dir, "loss.py"))
-    copy("models/TC.py", os.path.join(destination_dir, "TC.py"))
+    copy(os.path.join(cwd, "code\\main.py"), os.path.join(destination_dir, "main.py"))
+    copy(os.path.join(cwd,"code\\trainer.py"), os.path.join(destination_dir, "trainerfun.py"))
+    copy(os.path.join(cwd,f"code\\config_files\\{data_type}_Configs.py"), os.path.join(destination_dir, f"{data_type}_Configs.py"))
+    copy(os.path.join(cwd,"code\\augmentations.py"), os.path.join(destination_dir, "augmentations.py"))
+    copy(os.path.join(cwd,"code\\dataloader.py"), os.path.join(destination_dir, "dataloader.py"))
+    copy(os.path.join(cwd,f"code\\model.py"), os.path.join(destination_dir, f"model.py"))
+    copy(os.path.join(cwd,"code\\loss.py"), os.path.join(destination_dir, "loss.py"))
+    #copy(os.path.join(cwd,"code\\TC.py"), os.path.join(destination_dir, "TC.py"))
+
