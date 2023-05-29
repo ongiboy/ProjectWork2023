@@ -7,10 +7,10 @@ import argparse
 from utils import _logger, set_requires_grad
 # from models.TC import TC
 from utils import _calc_metrics, copy_Files
-#from model import * # base_Model, base_Model_F, target_classifier
+from model import * # base_Model, base_Model_F, target_classifier
 
 from dataloader import data_generator
-#from trainer import Trainer, model_finetune, model_test #model_evaluate
+from trainer import Trainer, model_finetune, model_test #model_evaluate
 
 
 # Args selections
@@ -100,3 +100,39 @@ subset = True # if subset= true, use a subset for debugging.
     # prolly why it loads so fast
 train_dl, valid_dl, test_dl = data_generator(sourcedata_path, targetdata_path, configs, training_mode, subset = subset) # splits into train-, valid- and test set
 logger.debug("Data loaded ...")
+
+
+# Defining TFC-model and classifier (Defined in model.py)
+# model = Time_Model(configs).to(device)
+# model_F = Frequency_Model(configs).to(device) #base_Model_F(configs).to(device) """here is right. No bug in this line.
+TFC_model = TFC(configs).to(device)
+classifier = target_classifier(configs).to(device)
+temporal_contr_model = None #TC(configs, device).to(device)
+
+
+# if training_mode == "fine_tune_test":
+#     # load saved model of this experiment
+#     load_from = os.path.join(os.path.join(logs_save_dir, experiment_description, run_description,
+#     f"pre_train_seed_{SEED}", "saved_models")) # 'experiments_logs/Exp1/run1/self_supervised_seed_0/saved_models'
+#     chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=device) # two saved models: ['model_state_dict', 'temporal_contr_model_state_dict']
+#
+#     pretrained_dict = chkpoint["model_state_dict"] # Time domain parameters
+#     model_dict = TFC_model.state_dict()
+#     # pretrained_dict = remove_logits(pretrained_dict)
+#     model_dict.update(pretrained_dict)
+#     TFC_model.load_state_dict(model_dict)
+
+
+model_optimizer = torch.optim.Adam(TFC_model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
+classifier_optimizer = torch.optim.Adam(classifier.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
+temporal_contr_optimizer = None # torch.optim.Adam(temporal_contr_model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
+
+if training_mode == "pre_train":  # to do it only once
+    copy_Files(os.path.join(logs_save_dir, experiment_description, run_description), sourcedata)
+
+# Trainer
+Trainer(TFC_model,  temporal_contr_model, model_optimizer, temporal_contr_optimizer, train_dl, valid_dl, test_dl, device,
+        logger, configs, experiment_log_dir, training_mode, model_F=None, model_F_optimizer = None,
+        classifier=classifier, classifier_optimizer=classifier_optimizer)
+
+logger.debug(f"Training time is : {datetime.now()-start_time}")
