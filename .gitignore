@@ -1,4 +1,4 @@
 datasets
-**__pycache__
-/experiments_logs**
+**/__pycache__/
+/experiments_logs/
 **/.idea
