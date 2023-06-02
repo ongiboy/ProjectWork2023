@@ -2,3 +2,4 @@ datasets
 **/__pycache__/
 /experiments_logs/
 **/.idea
+hpc/**-ignore/**
