@@ -9,4 +9,4 @@
 #BSUB -N
 # excute or command
 
-python python code/main.py --training_mode fine_tune_test --pretrain_dataset SleepEEG --target_dataset Epilepsy
+python ../../code/main.py --training_mode fine_tune_test --pretrain_dataset SleepEEG --target_dataset Epilepsy
