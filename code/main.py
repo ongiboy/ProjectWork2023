@@ -34,6 +34,8 @@ parser.add_argument('--device', default='cpu', type=str,
                     help='cpu or cuda')
 parser.add_argument('--home_path', default=home_dir, type=str,
                     help='Project home directory')
+parser.add_argument('--subset', default=True, type=bool,
+                    help='True or False')
 # args = parser.parse_args()
 args, unknown = parser.parse_known_args()
 
@@ -49,6 +51,7 @@ print('We are using %s now.' %device)
 pretrain_dataset = args.pretrain_dataset
 targetdata = args.target_dataset
 experiment_description = str(pretrain_dataset)+'_2_'+str(targetdata)
+subset = args.subset
 
 
 method = 'Time-Freq Consistency'
@@ -81,7 +84,7 @@ log_file_name = os.path.join(experiment_log_dir, f"logs_{datetime.now().strftime
 # 'experiments_logs/Exp1/run1/train_linear_seed_0/logs_14_04_2022_15_13_12.log'
 logger = _logger(log_file_name)
 logger.debug("=" * 45)
-logger.debug(f'Pre-training Dataset: {pretrain_dataset}')
+logger.debug(f'Pre-training Dataset: {pretrain_dataset} (subset={subset})')
 logger.debug(f'Target (fine-tuning) Dataset: {targetdata}')
 logger.debug(f'Method:  {method}')
 logger.debug(f'Mode:    {training_mode}')
@@ -91,8 +94,6 @@ logger.debug("=" * 45)
 sourcedata_path = f"./datasets/{pretrain_dataset}"  # './data/Epilepsy'
 targetdata_path = f"./datasets/{targetdata}"
 # for self-supervised, the data are augmented here. Only self-supervised learning need augmentation
-subset = True # if subset= true, use a subset for debugging.
-    # prolly why it loads so fast
 train_dl, valid_dl, test_dl = data_generator(sourcedata_path, targetdata_path, configs, training_mode, subset = subset) # splits into train-, valid- and test set
 logger.debug("Data loaded ...")
 
