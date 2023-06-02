@@ -1,7 +1,7 @@
 #!/bin/bash
-#BSUB -J ProjectWorkTest
-#BSUB -o ProjectWorkTest_%J.out
-#BSUB -e ProjectWorkTest_%J.err
+#BSUB -J hpc_run
+#BSUB -o ../run-scripts-ignore%J.out
+#BSUB -e ../run-scripts-ignoreJ.err
 #BSUB -q hpc
 #BSUB -W 2
 #BSUB -R "rusage[mem=512MB]"
@@ -9,4 +9,4 @@
 #BSUB -N
 # excute or command
 
-python python code\main.py --training_mode pre_train --pretrain_dataset SleepEEG --target_dataset Epilepsy
+python python code\main.py --training_mode pre_train --fine_tune_test SleepEEG --target_dataset Epilepsy
