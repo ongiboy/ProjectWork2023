@@ -31,21 +31,21 @@ def DataTransform(sample, config):
 #     return weak_aug, strong_aug
 def DataTransform_TD(sample, config):
     """Weak and strong augmentations"""
-    #plt.plot(sample[3][0])
+    x_mask = torch.from_numpy(np.copy(sample))
     aug_1 = jitter(sample, config.augmentation.jitter_ratio)
-    #plt.plot(aug_1[0][0])
     aug_2 = scaling(sample, config.augmentation.jitter_scale_ratio)
-    #plt.plot(aug_2[0][0])
     aug_3 = permutation(sample, max_segments=config.augmentation.max_seg)
-    #plt.plot(aug_3[0][0])
+    aug_4 = masking(x_mask, keepratio=0.9)
+    #plt.plot(sample[0][0],color="red")
+    #plt.plot(aug_4[0][0],color="blue")
 
-    li = np.random.randint(0, 3, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+    li = np.random.randint(0, 4, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
     li_onehot = one_hot_encoding(li)
     aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
     aug_2[li_onehot[:, 1]==0] = 0
     aug_3[li_onehot[:, 2]==0] = 0
-    # aug_4[1 - li_onehot[:, 3]] = 0
-    aug_T = aug_1 + aug_2 + aug_3 #+aug_4
+    aug_4[li_onehot[:, 3]==0] = 0
+    aug_T = aug_1 + aug_2 + aug_3 + aug_4
     #plt.plot(aug_T[3][0])
     return aug_T
 
@@ -54,14 +54,14 @@ def DataTransform_FD(sample, config):
     """Weak and strong augmentations in Frequency domain """
     aug_1 =  remove_frequency(sample, 0.1)
     aug_2 = add_frequency(sample, 0.1)
+
     # generate random sequence
     li = np.random.randint(0, 2, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
     li_onehot = one_hot_encoding(li)
     aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
     aug_2[li_onehot[:, 1]==0] = 0
     aug_F = aug_1 + aug_2
-    plt.plot(sample[0][0])
-    plt.plot(aug_F[0][0])
+
     return aug_F
 
 
@@ -108,7 +108,7 @@ def scaling(x, sigma=1.1):
 def permutation(x, max_segments=5, seg_mode="random"):
     orig_steps = np.arange(x.shape[2])
 
-    num_segs = np.random.randint(3, max_segments, size=(x.shape[0]))
+    num_segs = np.random.randint(1, max_segments, size=(x.shape[0]))
 
     ret = np.zeros_like(x)
     for i, pat in enumerate(x):

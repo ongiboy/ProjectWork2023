@@ -4,17 +4,16 @@ import numpy as np
 import math
 from augmentations import *
 import torch.fft as fft
-from augmentations import DataTransform_FD, DataTransform_TD
 
 
 sleep_data = torch.load("C:/Users/danie/TFC-pretraining/datasets/SleepEEG/train.pt")
-x0 = sleep_data['samples']
+x0 = sleep_data['samples'][:100]
 x0.shape
 
 x_f = fft.fft(x0).abs()
 
-aug_add = add_frequency(x_f[0][0],0.2)
-aug_remove = remove_frequency(x_f[0][0],0.5)
+aug_add = add_frequency(x_f,0.2)
+aug_remove = remove_frequency(x_f,0.5)
 
 '''fig, ax = plt.subplots(3)
 ax[0].plot(x_f[0][0], linewidth=3)
@@ -35,8 +34,8 @@ aug_jit = jitter(x0,10)
 aug_scaling = scaling(x0,2)
 
 ## Using the permutation-augmentation
-x_perm = torch.from_numpy(np.copy(x0))
-aug_perm = permutation(x_perm, 5)
+#x_perm = torch.from_numpy(np.copy(x0))
+aug_perm = permutation(x0, 5)
 
 ## Using the masking-augmentation
 x_mask = torch.from_numpy(np.copy(x0))
@@ -56,9 +55,9 @@ ax[4].plot(aug_mask[0][0], linewidth=2)
 ax[4].set_title("Masking (TD)")
 ax[5].plot(x_f[0][0], color = "darkslateblue", linewidth=2)
 ax[5].set_title("Original Signal (FD)")
-ax[6].plot(aug_add, color = "darkslateblue", linewidth=2)
+ax[6].plot(aug_add[0][0], color = "darkslateblue", linewidth=2)
 ax[6].set_title("Add frequency (FD)")
-ax[7].plot(aug_remove, color = "darkslateblue", linewidth=2)
+ax[7].plot(aug_remove[0][0], color = "darkslateblue", linewidth=2)
 ax[7].set_title("Remove frequency (FD)")
 jit_fig.tight_layout()
 plt.show()

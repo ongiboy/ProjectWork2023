@@ -1,34 +1,26 @@
-import torch
-
 import os
 import numpy as np
 from datetime import datetime
 import argparse
-from utils import _logger, set_requires_grad
-# from models.TC import TC
-from utils import _calc_metrics, copy_Files
-from model import * # base_Model, base_Model_F, target_classifier
-
+from utils import _logger
+from model import *
 from dataloader import data_generator
-from trainer import Trainer, model_finetune, model_test #model_evaluate
+from trainer import Trainer
 
 
 # Args selections
 start_time = datetime.now()
-
 parser = argparse.ArgumentParser()
 
 ######################## Model parameters ########################
 home_dir = os.getcwd()
 
-# parser.add_argument('--experiment_description', default='Exp1', type=str,
-#                     help='Experiment Description')
 parser.add_argument('--run_description', default='run1', type=str,
                     help='Experiment Description')
-parser.add_argument('--seed', default=0, type=int, help='seed value')
+parser.add_argument('--seed', default=42, type=int, help='seed value')
 
 # 1. self_supervised; 2. finetune (itself contains finetune and test)
-parser.add_argument('--training_mode', default='fine_tune_test', type=str,
+parser.add_argument('--training_mode', default='pre_train', type=str,
                     help='pre_train, fine_tune_test')
 
 parser.add_argument('--pretrain_dataset', default='SleepEEG', type=str,
@@ -45,24 +37,27 @@ parser.add_argument('--home_path', default=home_dir, type=str,
 # args = parser.parse_args()
 args, unknown = parser.parse_known_args()
 
+with_gpu = torch.cuda.is_available()
+if with_gpu:
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+print('We are using %s now.' %device)
 
-device = torch.device(args.device) # 'cpu'
-# experiment_description = args.experiment_description
-sourcedata = args.pretrain_dataset
+#device = torch.device(args.device) # 'cpu'
+
+pretrain_dataset = args.pretrain_dataset
 targetdata = args.target_dataset
-experiment_description = str(sourcedata)+'_2_'+str(targetdata)
+experiment_description = str(pretrain_dataset)+'_2_'+str(targetdata)
 
 
-method = 'Time-Freq Consistency' # 'TS-TCC'
-training_mode = args.training_mode # 'fine_tune_test'
-run_description = args.run_description # 'run1'
-
-logs_save_dir = args.logs_save_dir # 'experiments_logs'
+method = 'Time-Freq Consistency'
+training_mode = args.training_mode 
+run_description = args.run_description 
+logs_save_dir = args.logs_save_dir
 os.makedirs(logs_save_dir, exist_ok=True)
-
-
-exec(f'from config_files.{sourcedata}_Configs import Config as Configs')
-configs = Configs() # This is OK???
+exec(f'from config_files.{pretrain_dataset}_Configs import Config as Configs')
+configs = Configs()
 
 # # ##### fix random seeds for reproducibility ########
 SEED = args.seed
@@ -86,14 +81,14 @@ log_file_name = os.path.join(experiment_log_dir, f"logs_{datetime.now().strftime
 # 'experiments_logs/Exp1/run1/train_linear_seed_0/logs_14_04_2022_15_13_12.log'
 logger = _logger(log_file_name)
 logger.debug("=" * 45)
-logger.debug(f'Pre-training Dataset: {sourcedata}')
+logger.debug(f'Pre-training Dataset: {pretrain_dataset}')
 logger.debug(f'Target (fine-tuning) Dataset: {targetdata}')
 logger.debug(f'Method:  {method}')
 logger.debug(f'Mode:    {training_mode}')
 logger.debug("=" * 45)
 
 # Load datasets
-sourcedata_path = f"./datasets/{sourcedata}"  # './data/Epilepsy'
+sourcedata_path = f"./datasets/{pretrain_dataset}"  # './data/Epilepsy'
 targetdata_path = f"./datasets/{targetdata}"
 # for self-supervised, the data are augmented here. Only self-supervised learning need augmentation
 subset = True # if subset= true, use a subset for debugging.
@@ -102,37 +97,29 @@ train_dl, valid_dl, test_dl = data_generator(sourcedata_path, targetdata_path, c
 logger.debug("Data loaded ...")
 
 
-# Defining TFC-model and classifier (Defined in model.py)
-# model = Time_Model(configs).to(device)
-# model_F = Frequency_Model(configs).to(device) #base_Model_F(configs).to(device) """here is right. No bug in this line.
+# Load Model
+"""Here are two models, one basemodel, another is temporal contrastive model"""
 TFC_model = TFC(configs).to(device)
 classifier = target_classifier(configs).to(device)
-temporal_contr_model = None #TC(configs, device).to(device)
+temporal_contr_model = None
 
 
-""" if training_mode == "fine_tune_test":
+if training_mode == "fine_tune_test":
     # load saved model of this experiment
     load_from = os.path.join(os.path.join(logs_save_dir, experiment_description, run_description,
     f"pre_train_seed_{SEED}", "saved_models")) # 'experiments_logs/Exp1/run1/self_supervised_seed_0/saved_models'
-    chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=device) # two saved models: ['model_state_dict', 'temporal_contr_model_state_dict']
     
-    pretrained_dict = chkpoint["model_state_dict"] # Time domain parameters
-    model_dict = TFC_model.state_dict()
-    # pretrained_dict = remove_logits(pretrained_dict)
-    model_dict.update(pretrained_dict)
-    TFC_model.load_state_dict(model_dict) """
+    print("The loading file path", load_from)
+    chkpoint = torch.load(os.path.join(load_from, "ckp_last.pt"), map_location=device)
+    pretrained_dict = chkpoint["model_state_dict"]
+    TFC_model.load_state_dict(pretrained_dict)
 
 
 model_optimizer = torch.optim.Adam(TFC_model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
 classifier_optimizer = torch.optim.Adam(classifier.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
-temporal_contr_optimizer = None # torch.optim.Adam(temporal_contr_model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
-
-if training_mode == "pre_train":  # to do it only once
-    copy_Files(os.path.join(logs_save_dir, experiment_description, run_description), sourcedata)
 
 # Trainer
-Trainer(TFC_model,  temporal_contr_model, model_optimizer, temporal_contr_optimizer, train_dl, valid_dl, test_dl, device,
-        logger, configs, experiment_log_dir, training_mode, model_F=None, model_F_optimizer = None,
-        classifier=classifier, classifier_optimizer=classifier_optimizer)
+Trainer(TFC_model, model_optimizer, classifier, classifier_optimizer, train_dl, valid_dl, test_dl, device,
+        logger, configs, experiment_log_dir, training_mode)
 
 logger.debug(f"Training time is : {datetime.now()-start_time}")
