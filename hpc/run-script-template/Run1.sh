@@ -1,7 +1,7 @@
 #!/bin/bash
 #BSUB -J Run1
-#BSUB -o ../runs/Run1_%J.out
-#BSUB -e ../runs/Run1_%J.err
+#BSUB -o ../runs-ignore/Run1_%J.out
+#BSUB -e ../runs-ignore/Run1_%J.err
 #BSUB -q hpc
 #BSUB -W 2
 #BSUB -R "rusage[mem=512MB]"
