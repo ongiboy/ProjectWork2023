@@ -11,4 +11,4 @@
 # since all commands are from xterm's cd,
 # remember to place cd in git folder: "ProjectWork2023"
 
-python code/Test.py
+python code/main.py --training_mode pre_train --pretrain_dataset SleepEEG --target_dataset Epilepsy --subset True
