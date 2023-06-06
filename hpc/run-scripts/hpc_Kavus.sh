@@ -1,15 +1,18 @@
 #!/bin/bash
-#BSUB -J hpc_run
-#BSUB -o hpc/runs%J.out
-#BSUB -e hpc/runs%J.err
+#BSUB -J Run_SleepEEG_Epilepsy
+#BSUB -o hpc/runs/Run_SleepEEG_Epilepsy_%J.out
+#BSUB -e hpc/runs/Run_SleepEEG_Epilepsy_%J.err
+
+# gpu
 #BSUB -q gpuv100
-#BSUB -W 01:00
-#BSUB -R "rusage[mem=512MB]"
-#BSUB -u christianonghansen@gmail.com
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -W 20:00
+#BSUB -R "rusage[mem=24G] span[hosts=1]"
 #BSUB -n 32
+##BSUB -u kavus08@gmail.com
 #BSUB -N
 # excute or command
 
 source ../myenv/env/bin/activate
 
-python code/main.py --training_mode fine_tune_test --pretrain_dataset SleepEEG --target_dataset Epilepsy
+python code/main.py --training_mode pre_train --pretrain_dataset SleepEEG --target_dataset Epilepsy --subset False
