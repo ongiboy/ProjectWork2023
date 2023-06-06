@@ -35,7 +35,7 @@ parser.add_argument('--device', default='cpu', type=str,
                     help='cpu or cuda')
 parser.add_argument('--home_path', default=home_dir, type=str,
                     help='Project home directory')
-parser.add_argument('--subset', default=True, type=bool,
+parser.add_argument('--subset', default="True", type=str,
                     help='True or False')
 # args = parser.parse_args()
 args, unknown = parser.parse_known_args()
@@ -52,7 +52,7 @@ print('We are using %s now.' %device)
 pretrain_dataset = args.pretrain_dataset
 targetdata = args.target_dataset
 experiment_description = str(pretrain_dataset)+'_2_'+str(targetdata)
-subset = args.subset
+subset = bool(args.subset)
 
 
 method = 'Time-Freq Consistency'
