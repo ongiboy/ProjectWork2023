@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import random
 import matplotlib.pyplot as plt
-import tensorflow as tf
+#import tensorflow as tf
 
 def one_hot_encoding(X):
     X = [int(x) for x in X]
