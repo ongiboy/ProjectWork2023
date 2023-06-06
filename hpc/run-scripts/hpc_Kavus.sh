@@ -7,8 +7,9 @@
 #BSUB -q gpuv100
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 20:00
-#BSUB -R "rusage[mem=100G] span[hosts=1]"
+#BSUB -R "rusage[mem=24G] span[hosts=1]"
 #BSUB -n 32
+##BSUB -u kavus08@gmail.com
 #BSUB -N
 # excute or command
 
