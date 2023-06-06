@@ -2,8 +2,11 @@
 #BSUB -J Run3_pre_Sleep_Epilepsy
 #BSUB -o hpc/runs/Run3_%J.out
 #BSUB -e hpc/runs/Run3_%J.err
-#BSUB -q hpc
-#BSUB -W 2
+
+# gpu
+#BSUB -q gpuv100
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -W 02:00
 #BSUB -R "rusage[mem=8G] span[hosts=1]"
 #BSUB -n 4
 #BSUB -N
