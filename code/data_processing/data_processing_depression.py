@@ -107,7 +107,8 @@ for j in range(len(Depression_datasets)):
 
     print(Depression_datasets[j],train_samples_tensor.shape, val_samples_tensor.shape, test_samples_tensor.shape)
     # Save Torch tensors as PT files in new created folders
-    os.mkdir(f"datasets\\{Depression_datasets[j]}")
+    if not os.path.exists(f"datasets\\{Depression_datasets[j]}"):
+        os.mkdir(f"datasets\\{Depression_datasets[j]}")
     torch.save(train_data_dict, f'datasets\\{Depression_datasets[j]}\\train.pt')
     torch.save(val_data_dict, f'datasets\\{Depression_datasets[j]}\\val.pt')
     torch.save(test_data_dict, f'datasets\\{Depression_datasets[j]}\\test.pt')
