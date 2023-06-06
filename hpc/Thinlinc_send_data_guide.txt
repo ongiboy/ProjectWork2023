@@ -1,3 +1,6 @@
+PC -> Thinclinc
 rsync -Pav -a mnt/c/Users/chris/'OneDrive - Danmarks Tekniske Universitet'/Skole/'DTU 4'/'DTU 4 - Project Work'/Project/'Git code'/ProjectWork2023/datasets --rsh=ssh s204109@transfer.gbar.dtu.dk:/zhome/35/9/156417/Desktop/ProjectWorkTest/ProjWorkRealTest/ProjectWork2023/
 
-rsync -Pav -e ssh s204109@transfer.gbar.dtu.dk:/zhome/35/9/156417/Desktop/ProjectWorkTest/ProjWorkRealTest/ProjectWork2023/ ~/Desktop/alignment_data/
+ThincLinc -> PC
+rsync -Pav -e ssh s204109@transfer.gbar.dtu.dk:/zhome/35/9/156417/Desktop/ProjWork/ProjectWork2023/hpc/environments ~/Desktop
+mnt/c/Users/chris/'OneDrive - Danmarks Tekniske Universitet'
