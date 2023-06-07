@@ -30,11 +30,11 @@ def DataTransform(sample, config):
 #     strong_aug = add_frequency(sample, 0.1)
 #     return weak_aug, strong_aug
 def DataTransform_TD(sample, config):
-    if False or config.new_aug != "": # OBS
+    if False or config.aug_new != "": # OBS
         print("New augmentations in use")
-        if config.new_aug == "Depr":
+        if config.aug_new == "Depr":
             pass
-        elif config.new_aug == "Exo":
+        elif config.aug_new == "Exo":
             pass
     else:
         print("Article augmentation in use")
@@ -149,3 +149,11 @@ def add_frequency(x, pertub_ratio=0):
     random_am = torch.rand(mask.shape)*(max_amplitudes*0.5)
     pertub_matrix = mask*random_am
     return x+pertub_matrix
+
+
+### OWN AUGMENTATIONS
+
+# TD
+
+
+# FD

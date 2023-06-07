@@ -4,14 +4,14 @@
 #BSUB -e hpc/runs/Run_%J.err.txt
 
 # gpu
-#BSUB -q gpua10
+#BSUB -q gpuv100
 #BSUB -gpu "num=1:mode=exclusive_process"
 
 # runtime
 #BSUB -W 6:00
 
 # specs
-#BSUB -R "rusage[mem=16G] span[hosts=1]"
+#BSUB -R "rusage[mem=10GB] span[hosts=1]"
 #BSUB -n 4
 
 # mail when done
