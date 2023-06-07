@@ -52,7 +52,7 @@ print('We are using %s now.' %device)
 pretrain_dataset = args.pretrain_dataset
 targetdata = args.target_dataset
 experiment_description = str(pretrain_dataset)+'_2_'+str(targetdata)
-subset = bool(args.subset)
+subset = args.subset == "True"
 
 
 method = 'Time-Freq Consistency'
