@@ -3,78 +3,48 @@ import numpy as np
 import torch
 import os
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from exo_split_data import split_data
 
 path = os.getcwd()
 path_train = f'{path}\datasets\Exoplanets\exoTrain.csv'
 path_test = f'{path}\datasets\Exoplanets\exoTest.csv'
 
 
+# There are 42 exoplanets in the dataset, and we split it 30/6/6
+# In training we combine 30 exoplanets with 60 non-exoplanets
+
 df_train = pd.read_csv(path_train)
 df_test = pd.read_csv(path_test)
 df = df_train.append(df_test, ignore_index=True) # combine into one data set
-data = np.random.permutation(df.values) # scramble data (rows)
 
-# extract labels
-labels = data[:,0]-1 
-data = data[: , 1:]
-len_obs = len(data[0])
+# Separate the DataFrame into two classes
+nonexo_df = df[df['LABEL'] == 1]
+exo_df = df[df['LABEL'] == 2]
 
-Exo_datasets = ["Exoplanets_SleepEEG", "Exoplanets_FD-A", "Exoplanets_HAR", "Exoplanets_ECG"]
-TSlength_aligneds = [178, 5120, 206, 1500]  # needed for zero padding
-final_data = np.array([])
-for n_pre in range(len(Exo_datasets)):
+# Training set is 60 non-exo planets and 30 exo planets
+train_nonexo = nonexo_df.sample(n=60, random_state=1)
+nonexo_df = nonexo_df.drop(train_nonexo.index)
 
-    TSlength = TSlength_aligneds[n_pre]
-    n_obs = len(data)
-    
-    if TSlength < len_obs: # subsampling
-        
-        num_subsamples = len_obs//TSlength + 1 # last sample completed w padding
+train_exo = exo_df.sample(n=30, random_state=1)
+exo_df = exo_df.drop(train_exo.index)
 
-        # pad to make reshape possible
-        n_pad = ((num_subsamples)*TSlength)-len_obs
-        pad_matrix = np.zeros((n_obs,n_pad))
-        data = np.hstack((data,pad_matrix))
+# Validation set is 26 non-exo planets and 6 exo planets
+valid_nonexo = nonexo_df.sample(n=26, random_state=1)
+nonexo_df = nonexo_df.drop(valid_nonexo.index)
 
-        # plan B:
-        # reshape((x,num_subsamples))   x = TSlength * len(data)
-        temp = np.reshape(data, (TSlength*n_obs , num_subsamples)) # every obs is broken into multiple rows
+valid_exo = exo_df.sample(n=6, random_state=1)
+exo_df = exo_df.drop(valid_exo.index)
 
-        # transpose
-        temp = np.transpose(temp) # now, every row consists of multiple TSlength-windows
+# Test set is the remaining rows
+test_nonexo = nonexo_df
+test_exo = exo_df
 
-        # reshape ((x,TSlength))  x = num_subsamples * n_obs
-        final_data = np.reshape(temp, (num_subsamples*n_obs , TSlength)) # break into seperate TSlength-windows
+# Concatenate the rows from both classes for each dataset
+train_df = pd.concat([train_nonexo, train_exo])
+valid_df = pd.concat([valid_nonexo, valid_exo])
+test_df = pd.concat([test_nonexo, test_exo])
 
-        # labels = [i for _ in range(5) for i in labels]
-        labels = np.array([i for _ in range(num_subsamples) for i in labels]) # (1,2,3) --> (1,2,3, 1,2,3, 1,2,3)
-        for i in range(30):
-            fig,axs = plt.subplots(2)
-            axs[0].plot(final_data[i])
-            axs[1].plot(data[i])
-            plt.show()
-            print()
-            plt.close()
-
-        print()
-
-        """ for i in range(len(data)):
-            obs = data[i]
-            print("debug: ", i, obs.shape)
-            temp = np.reshape(obs, (TSlength , num_subsamples))
-            temp = np.transpose(temp)
-            if i == 0:
-                final_data = temp
-            else:
-                final_data = np.vstack((final_data,temp))
-
-        final_labels = np.array([i for i in labels for _ in range(5)]) """
-
-    else: # zero padding
-        pad_matrix = np.zeros((len(data), TSlength-len_obs))
-        final_data = np.hstack((data, pad_matrix))
-        final_labels = labels
-        print()    
-
-final = torch.tensor(final_data).unsqueeze(1)
-
+split_data(train_df, "train")
+split_data(valid_df, "valid")
+split_data(test_df, "test")
