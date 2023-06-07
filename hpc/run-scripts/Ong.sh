@@ -1,10 +1,10 @@
 #!/bin/bash
-#BSUB -J pre_Sleep_Epi_subNot
+#BSUB -J pre_Sleep_Epi_subYes
 #BSUB -o hpc/runs/Run_%J.out.txt
 #BSUB -e hpc/runs/Run_%J.err.txt
 
 # gpu
-#BSUB -q gpuv100
+#BSUB -q gpua10
 #BSUB -gpu "num=1:mode=exclusive_process"
 
 # runtime
@@ -23,9 +23,9 @@
 source hpc/environments/PW_env/bin/activate
 
 # SleepEEG -> Epilepsy
-python code/main.py --training_mode pre_train --pretrain_dataset SleepEEG --target_dataset Epilepsy --subset False
+python code/main.py --training_mode pre_train --pretrain_dataset SleepEEG --target_dataset Epilepsy --subset True
 # FD_A -> FD_B
-
+# python code/main.py --training_mode pre_train --pretrain_dataset FD-A --target_dataset FD-B --subset False
 # ECG -> EMG
 # python code/main.py --training_mode pre_train --pretrain_dataset ECG --target_dataset EMG --subset False
 # HAR -> Gesture
