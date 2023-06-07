@@ -1,7 +1,7 @@
 #!/bin/bash
-#BSUB -J pre_Sleep_Epilepsy_subNot
-#BSUB -o hpc/runs/%J.out
-#BSUB -e hpc/runs/J.err
+#BSUB -J pre_HAR_Gesture_subYes
+#BSUB -o hpc/runs/Run_%J.out.txt
+#BSUB -e hpc/runs/Run_%J.err.txt
 
 # gpu
 #BSUB -q gpuv100
@@ -11,7 +11,7 @@
 #BSUB -W 20:00
 
 # specs
-#BSUB -R "rusage[mem=16G] span[hosts=1]"
+#BSUB -R "rusage[mem=8G] span[hosts=1]"
 #BSUB -n 4
 
 # mail when done
@@ -22,8 +22,8 @@
 
 source hpc/environments/PW_env/bin/activate
 
-python code/main.py --training_mode pre_train --pretrain_dataset SleepEEG --target_dataset Epilepsy --subset False
+python code/main.py --training_mode pre_train --pretrain_dataset HAR --target_dataset Gesture --subset True
 # SleepEEG -> Epilepsy
-# FD-A -> FD-B
+# FD_A -> FD_B
 # ECG -> EMG
 # HAR -> Gesture
