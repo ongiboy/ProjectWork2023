@@ -48,15 +48,14 @@ for n_pre in range(len(Exo_datasets)):
 
         # labels = [i for _ in range(5) for i in labels]
         labels = np.array([i for _ in range(num_subsamples) for i in labels]) # (1,2,3) --> (1,2,3, 1,2,3, 1,2,3)
-        for i in range(30):
+        """ for i in range(30):
             fig,axs = plt.subplots(2)
             axs[0].plot(final_data[i])
             axs[1].plot(data[i])
             plt.show()
             print()
             plt.close()
-
-        print()
+        print() """
 
         """ for i in range(len(data)):
             obs = data[i]
