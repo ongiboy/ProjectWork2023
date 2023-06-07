@@ -30,23 +30,32 @@ def DataTransform(sample, config):
 #     strong_aug = add_frequency(sample, 0.1)
 #     return weak_aug, strong_aug
 def DataTransform_TD(sample, config):
-    """Weak and strong augmentations"""
-    x_mask = torch.from_numpy(np.copy(sample))
-    aug_1 = jitter(sample, config.augmentation.jitter_ratio)
-    aug_2 = scaling(sample, config.augmentation.jitter_scale_ratio)
-    aug_3 = permutation(sample, max_segments=config.augmentation.max_seg)
-    aug_4 = masking(x_mask, keepratio=0.9)
-    #plt.plot(sample[0][0],color="red")
-    #plt.plot(aug_4[0][0],color="blue")
+    if False or config.aug_new != "": # OBS
+        print("New augmentations in use")
+        if config.aug_new == "Depr":
+            pass
+        elif config.aug_new == "Exo":
+            pass
+    else:
+        print("Article augmentation in use")
+        """Weak and strong augmentations"""
+        x_mask = torch.from_numpy(np.copy(sample))
+        aug_1 = jitter(sample, config.augmentation.jitter_ratio)
+        aug_2 = scaling(sample, config.augmentation.jitter_scale_ratio)
+        aug_3 = permutation(sample, max_segments=config.augmentation.max_seg)
+        aug_4 = masking(x_mask, keepratio=0.9)
+        #plt.plot(sample[0][0],color="red")
+        #plt.plot(aug_4[0][0],color="blue")
 
-    li = np.random.randint(0, 4, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
-    li_onehot = one_hot_encoding(li)
-    aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
-    aug_2[li_onehot[:, 1]==0] = 0
-    aug_3[li_onehot[:, 2]==0] = 0
-    aug_4[li_onehot[:, 3]==0] = 0
-    aug_T = aug_1 + aug_2 + aug_3 + aug_4
-    #plt.plot(aug_T[3][0])
+        li = np.random.randint(0, 4, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+        li_onehot = one_hot_encoding(li)
+        aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
+        aug_2[li_onehot[:, 1]==0] = 0
+        aug_3[li_onehot[:, 2]==0] = 0
+        aug_4[li_onehot[:, 3]==0] = 0
+        aug_T = aug_1 + aug_2 + aug_3 + aug_4
+        #plt.plot(aug_T[3][0])
+    
     return aug_T
 
 
@@ -140,3 +149,11 @@ def add_frequency(x, pertub_ratio=0):
     random_am = torch.rand(mask.shape)*(max_amplitudes*0.5)
     pertub_matrix = mask*random_am
     return x+pertub_matrix
+
+
+### OWN AUGMENTATIONS
+
+# TD
+
+
+# FD

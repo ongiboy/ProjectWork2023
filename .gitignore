@@ -3,3 +3,4 @@ datasets
 /experiments_logs/
 **/.idea
 hpc/runs/
+hpc/environments/**

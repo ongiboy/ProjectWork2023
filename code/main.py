@@ -26,7 +26,7 @@ parser.add_argument('--training_mode', default='pre_train', type=str,
 parser.add_argument('--pretrain_dataset', default='SleepEEG', type=str,
                     help='Dataset of choice: SleepEEG, FD_A, HAR, ECG')
 
-parser.add_argument('--target_dataset', default='Depression', type=str,
+parser.add_argument('--target_dataset', default='Epilepsy', type=str,
                     help='Dataset of choice: Epilepsy, FD_B, Gesture, EMG')
 
 parser.add_argument('--logs_save_dir', default='experiments_logs', type=str,
@@ -60,8 +60,14 @@ training_mode = args.training_mode
 run_description = args.run_description 
 logs_save_dir = args.logs_save_dir
 os.makedirs(logs_save_dir, exist_ok=True)
-exec(f'from config_files.{pretrain_dataset}_Configs import Config as Configs')
-configs = Configs()
+
+if any(data in targetdata for data in ["Depression", "Exoplanets"]):
+    exec(f'from config_files.{targetdata}_Configs import Config as Configs')
+    configs = Configs()
+
+else:
+    exec(f'from config_files.{pretrain_dataset}_Configs import Config as Configs')
+    configs = Configs()
 
 # # ##### fix random seeds for reproducibility ########
 SEED = args.seed

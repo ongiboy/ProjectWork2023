@@ -1,6 +1,7 @@
 
 class Config(object):
     def __init__(self):
+        self.aug_new = ""
         # model configs
         self.input_channels = 1
         self.kernel_size = 32

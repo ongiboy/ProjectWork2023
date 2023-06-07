@@ -1,6 +1,6 @@
 class Config(object):
     def __init__(self):
-        self.aug_new = ""
+        self.aug_new = "Depr"
         # model configs
         self.input_channels = 1
         self.kernel_size = 8
@@ -33,7 +33,7 @@ class Config(object):
         self.target_batch_size = 41# 82 # 41
         self.increased_dim = 1
         self.final_out_channels = 128
-        self.num_classes_target = 3
+        self.num_classes_target = 2
         self.features_len_f = self.features_len
         self.CNNoutput_channel = 190 # 751#
 
