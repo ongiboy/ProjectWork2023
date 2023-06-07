@@ -4,3 +4,4 @@ datasets
 **/.idea
 hpc/runs/
 hpc/environments/**
+/ong
