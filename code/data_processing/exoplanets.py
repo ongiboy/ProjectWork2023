@@ -49,16 +49,23 @@ test_combined = pd.concat([test_nonexo, test_exo])
 
 # Setting outliers to the mean of the sample
 train_values = train_combined.values[: , 1:]
+train_labels = train_combined.values[: , 0]
 valid_values = valid_combined.values[: , 1:]
+valid_labels = valid_combined.values[: , 0]
 test_values = test_combined.values[: , 1:]
+test_labels = test_combined.values[: , 0]
+
 
 train_df_clean = remove_outliers(train_values)
 valid_df_clean = remove_outliers(valid_values)
 test_df_clean = remove_outliers(test_values)
 
 train_df = pd.DataFrame(train_df_clean)
+train_df.insert(0, "LABEL", train_labels)
 valid_df = pd.DataFrame(valid_df_clean)
+valid_df.insert(0, "LABEL", valid_labels)
 test_df = pd.DataFrame(test_df_clean)
+test_df.insert(0, "LABEL", test_labels)
 
 
 split_data(train_df, "train")
