@@ -40,7 +40,7 @@ parser.add_argument('--subset', default="False", type=str,
 # args = parser.parse_args()
 args, unknown = parser.parse_known_args()
 
-device = torch.device(args.device) # 'cuda'
+device = torch.device(args.device) # 'cpu'
 print("we are using: ",device)
 
 pretrain_dataset = args.pretrain_dataset
