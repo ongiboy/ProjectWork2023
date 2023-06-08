@@ -5,12 +5,13 @@ def remove_outliers(matrix):
     
     for i in range(matrix.shape[0]):
         row = matrix[i, :]
+        row_maxidx, row_minidx = row.argmax(), row.argmin()
         std = np.std(row)
         mean = np.mean(row)
-        threshold = 3 * std
+
         
         # Update values exceeding the threshold
-        processed_matrix[i, row > threshold] = mean
-        processed_matrix[i, row < -threshold] = mean
+        processed_matrix[i, row_maxidx] = mean
+        processed_matrix[i, row_minidx] = mean
     
     return processed_matrix
