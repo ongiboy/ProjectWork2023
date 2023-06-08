@@ -200,13 +200,31 @@ def slope_trend(x, max_stds=1):
         end_point = np.random.uniform(-1, 1) * std * max_stds
 
         slope = (end_point-start_point)/len(signal)
-        slope_array = [j*slope for j in range(len(signal))]
+        slope_array = np.array([j*slope for j in range(len(signal))])
 
         sloped_x[i, 0, :] += slope_array
     return sloped_x
 
-def step_trend():
-    pass
+def step_trend(x, num_steps, max_step=1):
+    """Adds step-like trends to signals"""
+    stepped_x = x.copy()
+
+    # loop over each signal/row
+    for i in range(stepped_x.shape[0]):
+        signal = stepped_x[i, 0, :]  # 0 if only 1 channel !!!
+        std = np.std(signal)
+
+        for _ in range(num_steps):
+            # randomly generate left and right indices for the step
+            left_index = np.random.randint(0, len(signal))
+            right_index = np.random.randint(left_index, len(signal))
+
+            step_magnitude = np.random.uniform(0, max_step) * std
+            step_direction = np.sign(signal[right_index] - signal[left_index])
+            step_array = [step_direction * step_magnitude * j for j in range(right_index - left_index + 1)]
+
+            stepped_x[i, 0, left_index:right_index+1] += step_array
+    return stepped_x
 
 # FD
 def noise_replace():
