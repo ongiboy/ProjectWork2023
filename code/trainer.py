@@ -47,11 +47,12 @@ def Trainer(model,  model_optimizer, classifier, classifier_optimizer, train_dl,
         torch.save(chkpoint, os.path.join(experiment_log_dir, "saved_models", f'ckp_last.pt'))
         print('Pretrained model is stored at folder:{}'.format(experiment_log_dir+'saved_models'+'ckp_last.pt'))
 
-        logger.debug('\nTotal pre-training loss: %s', pretrain_loss)
-        logger.debug('\nTotal pre-training loss_t: %s', pretrain_loss_t)
-        logger.debug('\nTotal pre-training loss_f: %s', pretrain_loss_f)
-        logger.debug('\nTotal pre-training loss_c: %s', pretrain_loss_c)
-        logger.debug('\nTotal pre-training loss_TF: %s', pretrain_loss_TF)
+        logger.debug('\nTotal pre-training losses:')
+        logger.debug('loss= %s', pretrain_loss)
+        logger.debug('loss_t= %s', pretrain_loss_t)
+        logger.debug('loss_f= %s', pretrain_loss_f)
+        logger.debug('loss_c= %s', pretrain_loss_c)
+        logger.debug('loss_TF= %s', pretrain_loss_TF)
         
 
     """Fine-tuning and Test"""
@@ -127,11 +128,11 @@ def Trainer(model,  model_optimizer, classifier, classifier_optimizer, train_dl,
                                 best_performance[4], best_performance[5]))
         #print('Best KNN F1', max(KNN_f1))
 
-        logger.debug("\n################## Saved accuracies and losses #########################")
-        logger.debug("\n Finetune Accuracies: %s", finetune_acc)
-        logger.debug("\n Finetune Losses: %s", finetune_loss)
-        logger.debug("\n Test Accuracies: %s", test_acc_list)
-        logger.debug("\n Test Losses: %s", test_loss_list)
+        logger.debug("\n################## Saved fine-tune accuracies and losses #########################")
+        logger.debug("\n Finetune_Accuracies= %s", finetune_acc)
+        logger.debug("\n Finetune_Losses= %s", finetune_loss)
+        logger.debug("\n Test_Accuracies= %s", test_acc_list)
+        logger.debug("\n Test_Losses= %s", test_loss_list)
 
     logger.debug("\n################## Training is Done! #########################")
 
