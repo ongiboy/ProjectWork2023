@@ -35,19 +35,13 @@ parser.add_argument('--device', default='cpu', type=str,
                     help='cpu or cuda')
 parser.add_argument('--home_path', default=home_dir, type=str,
                     help='Project home directory')
-parser.add_argument('--subset', default="True", type=str,
+parser.add_argument('--subset', default="False", type=str,
                     help='True or False')
 # args = parser.parse_args()
 args, unknown = parser.parse_known_args()
 
-with_gpu = torch.cuda.is_available()
-if with_gpu:
-    device = torch.device("cuda")
-else:
-    device = torch.device("cpu")
-print('We are using %s now.' %device)
-
-#device = torch.device(args.device) # 'cpu'
+device = torch.device(args.device) # 'cuda'
+print("we are using: ",device)
 
 pretrain_dataset = args.pretrain_dataset
 targetdata = args.target_dataset
