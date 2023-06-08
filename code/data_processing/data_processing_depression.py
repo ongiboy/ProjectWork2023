@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import torch
+from check_consecutive import check_consecutive_repeats
 
 path = os.getcwd()
 cond = f'{path}\datasets\Depression\data\condition'
@@ -20,6 +21,7 @@ combined_data = pd.DataFrame()
 Depression_datasets = ["Depression_SleepEEG", "Depression_FD-A", "Depression_HAR", "Depression_ECG"]
 TSlength_aligneds = [178, 5120, 206, 1500]  # needed for zero padding
 Segments_days_min = [(1, 8), (3, 1), (1, 7), (1, 1)]  # SLEEP = 180, FD_A = 4320, HAR = 205,7,  ECG = 1440
+
 # defining data
 for j in range(len(Depression_datasets)):
     num_days, num_min = Segments_days_min[j]
@@ -29,7 +31,7 @@ for j in range(len(Depression_datasets)):
     segmented_data = []
     labels = []
 
-    # Load and append data from the control folder
+    # Load and append data from the control and condition folder
     folders = [cont, cond]
     for folder, label in zip(folders, [0, 1]):
         files = os.listdir(folder)
@@ -37,6 +39,8 @@ for j in range(len(Depression_datasets)):
             file_path = os.path.join(folder, file)
             DATA = pd.read_csv(file_path)
             start_index = 0
+            
+            ## Finding the first 00:00:00 timestamp
             for i in range(len(DATA["timestamp"])):
                 if DATA["timestamp"][i][11:19] == '00:00:00':
                     start_index = i
@@ -44,15 +48,27 @@ for j in range(len(Depression_datasets)):
             data = DATA["activity"][start_index:]
 
 
-            num_segments = len(data) // segment_length  # Number of segments for this file
+            # Segment the data into days and remove days with consecutive repeats and low activity
+            data_seg_days = []
+            num_segments = len(data) // 1440  # Number of segments for this file
+            for i in range(num_segments):
+                start_index = i * 1440
+                end_index = start_index + 1440
+                day_segments = data.iloc[start_index:end_index]
+                if day_segments.mean() > 10 and check_consecutive_repeats(day_segments, 200) == False: 
+                    data_seg_days.append(day_segments)
+
+            clean_df = pd.concat(data_seg_days, axis=0, ignore_index=True)
+            
 
             # Segment the signal and add to the segmented_data list
+            num_segments = len(clean_df) // segment_length  # Number of segments in the clean dataframe
             for i in range(num_segments):
                 start_index = i * segment_length
                 end_index = start_index + segment_length
-                segment = data.iloc[start_index:end_index].values
-
-                # SQUEZZING SEGMENTS
+                segment = clean_df.iloc[start_index:end_index].values
+                
+                # SQUEEZING SEGMENTS
                 new_segment = []
 
                 for i in range(len(segment)//num_min):
@@ -67,7 +83,6 @@ for j in range(len(Depression_datasets)):
 
                 segmented_data.append(new_segment)
                 labels.append(label)
-
 
     # Data matrix with labels
     segmented_matrix = np.vstack(segmented_data)

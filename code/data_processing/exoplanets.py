@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from exo_split_data import split_data
+from exo_remove_outliers import remove_outliers
 
 path = os.getcwd()
 path_train = f'{path}\datasets\Exoplanets\exoTrain.csv'
@@ -41,9 +42,24 @@ test_nonexo = nonexo_df
 test_exo = exo_df
 
 # Concatenate the rows from both classes for each dataset
-train_df = pd.concat([train_nonexo, train_exo])
-valid_df = pd.concat([valid_nonexo, valid_exo])
-test_df = pd.concat([test_nonexo, test_exo])
+train_combined = pd.concat([train_nonexo, train_exo])
+valid_combined = pd.concat([valid_nonexo, valid_exo])
+test_combined = pd.concat([test_nonexo, test_exo])
+
+
+# Setting outliers to the mean of the sample
+train_values = train_combined.values[: , 1:]
+valid_values = valid_combined.values[: , 1:]
+test_values = test_combined.values[: , 1:]
+
+train_df_clean = remove_outliers(train_values)
+valid_df_clean = remove_outliers(valid_values)
+test_df_clean = remove_outliers(test_values)
+
+train_df = pd.DataFrame(train_df_clean)
+valid_df = pd.DataFrame(valid_df_clean)
+test_df = pd.DataFrame(test_df_clean)
+
 
 split_data(train_df, "train")
 split_data(valid_df, "valid")
