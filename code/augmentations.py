@@ -161,5 +161,21 @@ def add_frequency(x, pertub_ratio=0):
 ### OWN AUGMENTATIONS
 
 # TD
+def reverse():
+    pass
+
+def flip():
+    pass
+
+def spike():
+    pass
+
+def slope_trend():
+    pass
+
+def step_trend():
+    pass
 
 # FD
+def noise_replace():
+    pass
