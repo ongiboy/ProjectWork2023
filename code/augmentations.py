@@ -32,9 +32,9 @@ def DataTransform(sample, config):
 def DataTransform_TD(sample, config):
     if False or config.aug_new != "": # OBS
         print("New augmentations in use")
-        if config.aug_new == "Depr":
+        if config.aug_new == "Depr": #
             pass
-        elif config.aug_new == "Exo":
+        elif config.aug_new == "Exo": #
             pass
     else:
         print("Article augmentation in use")
@@ -60,16 +60,23 @@ def DataTransform_TD(sample, config):
 
 
 def DataTransform_FD(sample, config):
-    """Weak and strong augmentations in Frequency domain """
-    aug_1 =  remove_frequency(sample, 0.1)
-    aug_2 = add_frequency(sample, 0.1)
+    if False or config.aug_new != "": # OBS
+        print("New augmentations in use")
+        if config.aug_new == "Depr": # reverse, noise injection,
+            pass
+        elif config.aug_new == "Exo": # flip, noise injection,
+            pass
+    else:
+        """Weak and strong augmentations in Frequency domain """
+        aug_1 =  remove_frequency(sample, 0.1)
+        aug_2 = add_frequency(sample, 0.1)
 
-    # generate random sequence
-    li = np.random.randint(0, 2, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
-    li_onehot = one_hot_encoding(li)
-    aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
-    aug_2[li_onehot[:, 1]==0] = 0
-    aug_F = aug_1 + aug_2
+        # generate random sequence
+        li = np.random.randint(0, 2, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+        li_onehot = one_hot_encoding(li)
+        aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
+        aug_2[li_onehot[:, 1]==0] = 0
+        aug_F = aug_1 + aug_2
 
     return aug_F
 
@@ -154,6 +161,53 @@ def add_frequency(x, pertub_ratio=0):
 ### OWN AUGMENTATIONS
 
 # TD
+def reverse(x):
+    reversed_x = np.flip(x, axis=2)
+    return reversed_x
 
+def flip(x):
+    return -x
+
+def spike(x, num_spikes, max_spike=2):
+    """adds random spikes at random index for each signal """
+    spiked_x = x.copy()
+
+    # loop over each signal/row
+    for i in range(spiked_x.shape[0]):
+        signal = spiked_x[i, 0, :]  # 0 if only 1 channel !!!
+        std = np.std(signal)
+
+        for _ in range(num_spikes):
+            # random generate spikes and augment data
+            index = np.random.randint(0, len(signal))
+            direction = np.random.choice([-1, 1])
+            spike_magnitude = np.random.uniform(0, max_spike) * std
+
+            spiked_x[i, 0, index] += direction * spike_magnitude  # add spike to signal
+    return spiked_x
+
+def slope_trend(x, max_stds=1):
+    """adds a random slope to each signal"""
+    sloped_x = x.copy()
+
+    # loop over each signal/row
+    for i in range(sloped_x.shape[0]):
+        signal = sloped_x[i, 0, :]  # 0 if only 1 channel !!!
+        std = np.std(signal)
+
+        # generate random slope between 2 random points
+        start_point = np.random.uniform(-1, 1) * std * max_stds
+        end_point = np.random.uniform(-1, 1) * std * max_stds
+
+        slope = (end_point-start_point)/len(signal)
+        slope_array = [j*slope for j in range(len(signal))]
+
+        sloped_x[i, 0, :] += slope_array
+    return sloped_x
+
+def step_trend():
+    pass
 
 # FD
+def noise_replace():
+    pass
