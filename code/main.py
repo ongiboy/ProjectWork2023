@@ -23,10 +23,10 @@ parser.add_argument('--seed', default=42, type=int, help='seed value')
 parser.add_argument('--training_mode', default='pre_train', type=str,
                     help='pre_train, fine_tune_test')
 
-parser.add_argument('--pretrain_dataset', default='SleepEEG', type=str,
+parser.add_argument('--pretrain_dataset', default='FD_A', type=str,
                     help='Dataset of choice: SleepEEG, FD_A, HAR, ECG')
 
-parser.add_argument('--target_dataset', default='Epilepsy', type=str,
+parser.add_argument('--target_dataset', default='FD_B', type=str,
                     help='Dataset of choice: Epilepsy, FD_B, Gesture, EMG')
 
 parser.add_argument('--logs_save_dir', default='experiments_logs', type=str,
@@ -35,7 +35,7 @@ parser.add_argument('--device', default='cpu', type=str,
                     help='cpu or cuda')
 parser.add_argument('--home_path', default=home_dir, type=str,
                     help='Project home directory')
-parser.add_argument('--subset', default="False", type=str,
+parser.add_argument('--subset', default="True", type=str,
                     help='True or False')
 # args = parser.parse_args()
 args, unknown = parser.parse_known_args()

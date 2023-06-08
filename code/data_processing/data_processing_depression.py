@@ -17,7 +17,7 @@ cont = f'{path}\datasets\Depression\data\control'
 combined_data = pd.DataFrame()
 
 # create specific dataset for each pre_trained model
-Depression_datasets = ["Depression_SleepEEG", "Depression_FD-A", "Depression_HAR", "Depression_ECG"]
+Depression_datasets = ["Depression_SleepEEG", "Depression_FD_A", "Depression_HAR", "Depression_ECG"]
 TSlength_aligneds = [178, 5120, 206, 1500]  # needed for zero padding
 Segments_days_min = [(1, 8), (3, 1), (1, 7), (1, 1)]  # SLEEP = 180, FD_A = 4320, HAR = 205,7,  ECG = 1440
 # defining data
