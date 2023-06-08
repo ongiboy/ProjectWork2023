@@ -161,17 +161,49 @@ def add_frequency(x, pertub_ratio=0):
 ### OWN AUGMENTATIONS
 
 # TD
-def reverse():
-    pass
+def reverse(x):
+    reversed_x = np.flip(x, axis=2)
+    return reversed_x
 
-def flip():
-    pass
+def flip(x):
+    return -x
 
-def spike():
-    pass
+def spike(x, num_spikes, max_spike=2):
+    """adds random spikes at random index for each signal """
+    spiked_x = x.copy()
 
-def slope_trend():
-    pass
+    # loop over each signal/row
+    for i in range(spiked_x.shape[0]):
+        signal = spiked_x[i, 0, :]  # 0 if only 1 channel !!!
+        std = np.std(signal)
+
+        for _ in range(num_spikes):
+            # random generate spikes and augment data
+            index = np.random.randint(0, len(signal))
+            direction = np.random.choice([-1, 1])
+            spike_magnitude = np.random.uniform(0, max_spike) * std
+
+            spiked_x[i, 0, index] += direction * spike_magnitude  # add spike to signal
+    return spiked_x
+
+def slope_trend(x, max_stds=1):
+    """adds a random slope to each signal"""
+    sloped_x = x.copy()
+
+    # loop over each signal/row
+    for i in range(sloped_x.shape[0]):
+        signal = sloped_x[i, 0, :]  # 0 if only 1 channel !!!
+        std = np.std(signal)
+
+        # generate random slope between 2 random points
+        start_point = np.random.uniform(-1, 1) * std * max_stds
+        end_point = np.random.uniform(-1, 1) * std * max_stds
+
+        slope = (end_point-start_point)/len(signal)
+        slope_array = [j*slope for j in range(len(signal))]
+
+        sloped_x[i, 0, :] += slope_array
+    return sloped_x
 
 def step_trend():
     pass
