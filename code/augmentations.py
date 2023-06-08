@@ -161,6 +161,5 @@ def add_frequency(x, pertub_ratio=0):
 ### OWN AUGMENTATIONS
 
 # TD
-def reverse(x, )
 
 # FD
