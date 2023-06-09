@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import torch
-from check_consecutive import check_consecutive_repeats
+from process_functions import check_consecutive_repeats
 
 path = os.getcwd()
 cond = f'{path}\datasets\Depression\data\condition'

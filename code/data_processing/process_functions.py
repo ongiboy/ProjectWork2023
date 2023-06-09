@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import numpy as np
 import torch
@@ -93,3 +94,39 @@ def split_data(dataframe, training_mode):
             os.mkdir(f"datasets\\{Exo_datasets[n_pre]}")
         torch.save(train_data_dict, f'datasets\\{Exo_datasets[n_pre]}\\{training_mode}.pt')
     
+
+def remove_outliers(matrix):
+    processed_matrix = np.copy(matrix)  # Create a copy of the input matrix
+    
+    for i in range(matrix.shape[0]):
+        row = matrix[i, :]
+        row_maxidx, row_minidx = row.argmax(), row.argmin()
+        std = np.std(row)
+        mean = np.mean(row)
+
+        # Update values exceeding the threshold
+        processed_matrix[i, row_maxidx] = mean
+        processed_matrix[i, row_minidx] = mean
+    
+    return processed_matrix
+
+
+def check_consecutive_repeats(values, repeat_count):
+    current_count = 0
+    previous_value = None
+    
+    for value in values:
+        if value > 10:
+            if value == previous_value:
+                current_count += 1
+            else:
+                current_count = 1
+
+            if current_count == repeat_count:
+                #print(values)
+                #print(value)
+                return True
+
+            previous_value = value
+
+    return False

@@ -4,8 +4,7 @@ import torch
 import os
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from exo_split_data import split_data
-from exo_remove_outliers import remove_outliers
+from process_functions import *
 
 path = os.getcwd()
 path_train = f'{path}\datasets\Exoplanets\exoTrain.csv'
