@@ -38,23 +38,17 @@ def DataTransform_TD(sample, config):
             pass
     else:
         print("Article augmentation in use")
-        """Weak and strong augmentations"""
-        x_mask = torch.from_numpy(np.copy(sample))
         aug_1 = jitter(sample, config.augmentation.jitter_ratio)
         aug_2 = scaling(sample, config.augmentation.jitter_scale_ratio)
         aug_3 = permutation(sample, max_segments=config.augmentation.max_seg)
-        aug_4 = masking(x_mask, keepratio=0.9)
-        #plt.plot(sample[0][0],color="red")
-        #plt.plot(aug_4[0][0],color="blue")
 
-        li = np.random.randint(0, 4, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
-        li_onehot = one_hot_encoding(li)
-        aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
-        aug_2[li_onehot[:, 1]==0] = 0
-        aug_3[li_onehot[:, 2]==0] = 0
-        aug_4[li_onehot[:, 3]==0] = 0
-        aug_T = aug_1 + aug_2 + aug_3 + aug_4
-        #plt.plot(aug_T[3][0])
+        li = np.random.randint(0, 3, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+        li_onehot = one_hot_encoding(li) == 1
+        aug_1[~li_onehot[:, 0]] = 0 # the rows are not selected are set as zero.
+        aug_2[~li_onehot[:, 1]] = 0
+        aug_3[~li_onehot[:, 2]] = 0
+        # aug_4[1 - li_onehot[:, 3]] = 0
+        aug_T = aug_1 + aug_2 + aug_3 #+aug_4
     
     return aug_T
 
@@ -70,12 +64,11 @@ def DataTransform_FD(sample, config):
         """Weak and strong augmentations in Frequency domain """
         aug_1 =  remove_frequency(sample, 0.1)
         aug_2 = add_frequency(sample, 0.1)
-
         # generate random sequence
         li = np.random.randint(0, 2, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
-        li_onehot = one_hot_encoding(li)
-        aug_1[li_onehot[:, 0]==0] = 0 # the rows are not selected are set as zero.
-        aug_2[li_onehot[:, 1]==0] = 0
+        li_onehot = one_hot_encoding(li) == 1
+        aug_1[~li_onehot[:, 0]] = 0 # the rows are not selected are set as zero.
+        aug_2[~li_onehot[:, 1]] = 0
         aug_F = aug_1 + aug_2
 
     return aug_F
@@ -85,14 +78,13 @@ def DataTransform_FD(sample, config):
 def generate_binomial_mask(B, T, D, p=0.5):
     return torch.from_numpy(np.random.binomial(1, p, size=(B, T, D))).to(torch.bool)
 
-def masking(x, keepratio=0.9, mask= 'binomial'):
-    global mask_id
+def masking(x, mask= 'binomial'):
     nan_mask = ~x.isnan().any(axis=-1)
     x[~nan_mask] = 0
     # x = self.input_fc(x)  # B x T x Ch
 
     if mask == 'binomial':
-        mask_id = generate_binomial_mask(x.size(0), x.size(1), x.size(2), p=keepratio).to(x.device)
+        mask_id = generate_binomial_mask(x.size(0), x.size(1), x.size(2), p=0.9).to(x.device)
     # elif mask == 'continuous':
     #     mask = generate_continuous_mask(x.size(0), x.size(1)).to(x.device)
     # elif mask == 'all_true':
@@ -119,7 +111,7 @@ def scaling(x, sigma=1.1):
     for i in range(x.shape[1]):
         xi = x[:, i, :]
         ai.append(np.multiply(xi, factor[:, :])[:, np.newaxis, :])
-    return torch.from_numpy(np.concatenate((ai), axis=1))
+    return np.concatenate((ai), axis=1)
 
 def permutation(x, max_segments=5, seg_mode="random"):
     orig_steps = np.arange(x.shape[2])
@@ -147,13 +139,12 @@ def remove_frequency(x, maskout_ratio=0):
     mask = mask.to(x.device)
     return x*mask
 
-def add_frequency(x, pertub_ratio=0):
+def add_frequency(x, pertub_ratio=0,):
+
     mask = torch.FloatTensor(x.shape).uniform_() > (1-pertub_ratio) # only pertub_ratio of all values are True
     mask = mask.to(x.device)
-    max_amplitudes = torch.max(x, axis=2, keepdim=True)[0]
-    max_amplitudes = max_amplitudes.repeat(1, 1, x.shape[2])
-    #max_amplitude = x.max()
-    random_am = torch.rand(mask.shape)*(max_amplitudes*0.5)
+    max_amplitude = x.max()
+    random_am = torch.rand(mask.shape)*(max_amplitude*0.5)
     pertub_matrix = mask*random_am
     return x+pertub_matrix
 
