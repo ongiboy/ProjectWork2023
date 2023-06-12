@@ -1,6 +1,11 @@
-datasets
 **/__pycache__/
-/experiments_logs/
+**/.DS_Store
+old_README.md
 **/.idea
-hpc/runs/
-hpc/environments/**
+datasets
+*.log
+*.pt
+*.zip
+/experiments_logs/
+hpc/runs/**
+**_env

@@ -1,8 +1,5 @@
 import numpy as np
 import torch
-import random
-import matplotlib.pyplot as plt
-#import tensorflow as tf
 
 def one_hot_encoding(X):
     X = [int(x) for x in X]
@@ -127,24 +124,23 @@ def permutation(x, max_segments=5, seg_mode="random"):
                 splits = np.split(orig_steps, split_points)
             else:
                 splits = np.array_split(orig_steps, num_segs[i])
-            random.shuffle(splits)
-            warp = np.concatenate(splits).ravel()
+            warp = np.concatenate(np.random.permutation(splits)).ravel()
             ret[i] = pat[0,warp]
         else:
             ret[i] = pat
     return torch.from_numpy(ret)
 
 def remove_frequency(x, maskout_ratio=0):
-    mask = torch.FloatTensor(x.shape).uniform_() > maskout_ratio # maskout_ratio are False
+    mask = torch.cuda.FloatTensor(x.shape).uniform_() > maskout_ratio # maskout_ratio are False
     mask = mask.to(x.device)
     return x*mask
 
 def add_frequency(x, pertub_ratio=0,):
 
-    mask = torch.FloatTensor(x.shape).uniform_() > (1-pertub_ratio) # only pertub_ratio of all values are True
+    mask = torch.cuda.FloatTensor(x.shape).uniform_() > (1-pertub_ratio) # only pertub_ratio of all values are True
     mask = mask.to(x.device)
     max_amplitude = x.max()
-    random_am = torch.rand(mask.shape)*(max_amplitude*0.5)
+    random_am = torch.rand(mask.shape)*(max_amplitude*0.1)
     pertub_matrix = mask*random_am
     return x+pertub_matrix
 

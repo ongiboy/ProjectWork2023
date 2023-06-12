@@ -34,7 +34,6 @@ class Load_Dataset(Dataset):
             """if the dimension is larger than 178, take the first 178 dimensions. If multiple channels, take the first channel"""
             X_train = X_train[:subset_size] #
             y_train = y_train[:subset_size]
-            print('Using subset for debugging, the datasize is:', y_train.shape[0])
 
         if isinstance(X_train, np.ndarray):
             self.x_data = torch.from_numpy(X_train)
@@ -101,9 +100,3 @@ def data_generator(sourcedata_path, targetdata_path, configs, training_mode, sub
                                               num_workers=0)
 
     return train_loader, valid_loader, test_loader
-
-
-
-
-
-
