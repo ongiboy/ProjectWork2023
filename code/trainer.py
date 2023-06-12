@@ -327,8 +327,13 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
                 pred_numpy = predictions_test.detach().cpu().numpy()
                 labels_numpy = labels.detach().cpu().numpy()
 
-                auc_bs = roc_auc_score(onehot_label.detach().cpu().numpy(), pred_numpy,
+                # when AUC not possible
+                try:
+                    auc_bs = roc_auc_score(onehot_label.detach().cpu().numpy(), pred_numpy,
                                        average="macro", multi_class="ovr")
+                except:
+                    auc_bs = np.float(0)
+
                 prc_bs = average_precision_score(onehot_label.detach().cpu().numpy(), pred_numpy, average="macro")
 
                 pred_numpy = np.argmax(pred_numpy, axis=1)

@@ -43,9 +43,12 @@ parser.add_argument('--home_path', default=home_dir, type=str,
                     help='Project home directory')
 parser.add_argument('--subset', default="False", type=str,
                     help='True or False')
+parser.add_argument('--info', default="", type=str,
+                    help='Info')
 # args = parser.parse_args()
 args, unknown = parser.parse_known_args()
 subset = args.subset == "True"
+info = args.info
 
 device = torch.device(args.device)
 # experiment_description = args.experiment_description
@@ -87,6 +90,7 @@ log_file_name = os.path.join(experiment_log_dir, f"logs_{datetime.now().strftime
 # 'experiments_logs/Exp1/run1/train_linear_seed_0/logs_14_04_2022_15_13_12.log'
 logger = _logger(log_file_name)
 logger.debug(f"We are using {device}")
+logger.debug(f"Info: {info}")
 logger.debug("=" * 45)
 logger.debug(f'Pre-training Dataset: {sourcedata} (subset={subset})')
 logger.debug(f'Target (fine-tuning) Dataset: {targetdata}')
