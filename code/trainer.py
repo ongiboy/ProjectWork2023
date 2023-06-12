@@ -43,7 +43,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                                                               train_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer)
 
             # Plots
-            pretrain_loss_list.append(train_loss)
+            pretrain_loss_list.append(train_loss.item())
 
             if training_mode != 'self_supervised':  # use scheduler in all other modes.
                 scheduler.step(train_loss)
