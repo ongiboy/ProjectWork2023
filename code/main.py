@@ -32,12 +32,12 @@ parser.add_argument('--training_mode', default='fine_tune_test', type=str,
 
 parser.add_argument('--pretrain_dataset', default='SleepEEG', type=str,
                     help='Dataset of choice: SleepEEG, FD_A, HAR, ECG')
-parser.add_argument('--target_dataset', default='Epilepsy', type=str,
+parser.add_argument('--target_dataset', default='Depression_SleepEEG', type=str,
                     help='Dataset of choice: Epilepsy, FD_B, Gesture, EMG')
 
 parser.add_argument('--logs_save_dir', default='experiments_logs', type=str,
                     help='saving directory')
-parser.add_argument('--device', default='cuda', type=str,
+parser.add_argument('--device', default='cpu', type=str,
                     help='cpu or cuda')
 parser.add_argument('--home_path', default=home_dir, type=str,
                     help='Project home directory')
