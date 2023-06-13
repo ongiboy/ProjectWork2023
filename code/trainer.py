@@ -35,15 +35,23 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
 
         # Plots
         pretrain_loss_list = []
+        pretrain_loss_t = []
+        pretrain_loss_f = []
+        pretrain_loss_c = []
+        pretrain_loss_TF = []
 
         for epoch in range(1, config.num_epoch + 1):
             # Train and validate
             """Train. In fine-tuning, this part is also trained???"""
-            train_loss, train_acc, train_auc = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
+            train_loss, train_acc, train_auc, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
                                                               train_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer)
 
             # Plots
             pretrain_loss_list.append(train_loss.item())
+            pretrain_loss_t.append(train_loss_t)
+            pretrain_loss_f.append(train_loss_f)
+            pretrain_loss_c.append(train_loss_c)
+            pretrain_loss_TF.append(train_loss_TF)
 
             if training_mode != 'self_supervised':  # use scheduler in all other modes.
                 scheduler.step(train_loss)
@@ -52,7 +60,12 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                          )
 
         # Plots
+        logger.debug("\nTotal pre-training losses:")
         logger.debug("loss=%s",pretrain_loss_list)
+        logger.debug('loss_t= %s', pretrain_loss_t)
+        logger.debug('loss_f= %s', pretrain_loss_f)
+        logger.debug('loss_c= %s', pretrain_loss_c)
+        logger.debug('loss_TF= %s', pretrain_loss_TF)
 
         os.makedirs(os.path.join(experiment_log_dir, "saved_models"), exist_ok=True) # only save in self_supervised mode.
         chkpoint = {'model_state_dict': model.state_dict(),}
@@ -154,6 +167,13 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     total_loss = []
     total_acc = []
     total_auc = []
+
+    # Plots
+    total_loss_t = []
+    total_loss_f = []
+    total_loss_c = [] 
+    total_loss_TF = []
+
     model.train()
 
     for batch_idx, (data, labels, aug1, data_f, aug1_f) in enumerate(train_loader):
@@ -184,20 +204,32 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         lam = 0.5
         loss = lam*(loss_t + loss_f) + (1-lam)*loss_c
 
-        total_loss.append(loss.item())
         loss.backward()
         model_optimizer.step()
+
+        # Plots
+        total_loss_t.append(loss_t.item())
+        total_loss_f.append(loss_f.item())  
+        total_loss_TF.append(l_TF.item())
+        total_loss_c.append(loss_c.item())
+        total_loss.append(loss.item())
 
     print('preptraining: overall loss:{}, l_t: {}, l_f:{}, l_c:{}'.format(loss,loss_t,loss_f, loss_c))
 
     total_loss = torch.tensor(total_loss).mean()
+    # Plots
+    ave_loss_t = torch.tensor(total_loss_t).mean()
+    ave_loss_f = torch.tensor(total_loss_f).mean()
+    ave_loss_TF = torch.tensor(total_l_TF).mean()
+    ave_loss_c = torch.tensor(total_loss_c).mean()
+
     if training_mode == "pre_train":
         total_acc = 0
         total_auc = 0
     else:
         total_acc = torch.tensor(total_acc).mean()
         total_auc = torch.tensor(total_auc).mean()
-    return total_loss, total_acc, total_auc
+    return total_loss, total_acc, total_auc, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF)
 
 
 def model_finetune(model, temporal_contr_model, val_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
