@@ -220,7 +220,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     # Plots
     ave_loss_t = torch.tensor(total_loss_t).mean()
     ave_loss_f = torch.tensor(total_loss_f).mean()
-    ave_loss_TF = torch.tensor(total_l_TF).mean()
+    ave_loss_TF = torch.tensor(total_loss_TF).mean()
     ave_loss_c = torch.tensor(total_loss_c).mean()
 
     if training_mode == "pre_train":
