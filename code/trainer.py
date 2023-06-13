@@ -48,10 +48,10 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
 
             # Plots
             pretrain_loss_list.append(train_loss.item())
-            pretrain_loss_t.append(train_loss_t)
-            pretrain_loss_f.append(train_loss_f)
-            pretrain_loss_c.append(train_loss_c)
-            pretrain_loss_TF.append(train_loss_TF)
+            pretrain_loss_t.append(train_loss_t.item())
+            pretrain_loss_f.append(train_loss_f.item())
+            pretrain_loss_c.append(train_loss_c.item())
+            pretrain_loss_TF.append(train_loss_TF.item())
 
             if training_mode != 'self_supervised':  # use scheduler in all other modes.
                 scheduler.step(train_loss)
