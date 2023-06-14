@@ -78,7 +78,7 @@ if any(data in targetdata for data in ["Depression", "Exoplanets"]):
 
 # Old datasets
 else:
-    exec(f'from config_files.{pretrain_dataset}_Configs import Config as Configs')
+    exec(f'from config_files.{sourcedata}_Configs import Config as Configs')
     configs = Configs()
 
 # # ##### fix random seeds for reproducibility ########
