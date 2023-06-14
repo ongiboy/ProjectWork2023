@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 modes = ["pretrain", "finetune"]
-mode = modes[1]
+mode = modes[0]
 
 #labels only needed if mode == finetune
 labels = [2, 1, 2, 2, 1]
@@ -12,12 +12,14 @@ embeddings = [[-0.0881,  0.3651,  0.4371,  0.2529, -0.0125,  0.1860],
         [-0.1353,  0.3933,  0.4766,  0.2137,  0.0296,  0.2342],
         [-0.3589,  0.4560,  0.3395,  0.1862, -0.0783,  0.2093]]
 
+def embedding_PCA_plot(embeddings):
+    #n_components is number of PC's
+    pca = PCA(n_components=2)
+    pca.fit(embeddings)
+    embeddings_pca = pca.transform(embeddings)
+    return embeddings_pca
 
-#n_components is number of PC's
-pca = PCA(n_components=2)
-pca.fit(embeddings)
-embeddings_pca = pca.transform(embeddings)
-
+embeddings_pca = embedding_PCA_plot(embeddings)
 
 plt.figure(figsize=(8, 6))
 if mode == "finetune":
