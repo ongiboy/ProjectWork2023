@@ -30,6 +30,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
     criterion = nn.CrossEntropyLoss()
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(model_optimizer, 'min')
     """Pretraining"""
+    get_embeds = False
     if training_mode == 'pre_train':
         print('Pretraining on source dataset')
 
@@ -43,8 +44,10 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         for epoch in range(1, config.num_epoch + 1):
             # Train and validate
             """Train. In fine-tuning, this part is also trained???"""
+            if epoch == config.num_epoch:
+                get_embeds = True
             train_loss, train_acc, train_auc, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
-                                                              train_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer)
+                                                              train_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
 
             # Plots
             pretrain_loss_list.append(train_loss.item())
@@ -90,11 +93,14 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         finetune_acc_list = []
         test_loss_list = []
         test_acc_list = []
+        get_embeds = False
         
         for epoch in range(1, config.num_epoch + 1):
+            if epoch == config.num_epoch:
+                get_embeds = True
             valid_loss, valid_acc, valid_auc, valid_prc, emb_finetune, label_finetune, F1, (z_t, z_t_aug, z_f, z_f_aug, pred_list) = model_finetune(model, temporal_contr_model, valid_dl, config, device, training_mode,
                                                    model_optimizer, model_F=model_F, model_F_optimizer=model_F_optimizer,
-                                                        classifier=classifier, classifier_optimizer=classifier_optimizer)
+                                                        classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=False)
 
             if training_mode != 'pre_train':  # use scheduler in all other modes.
                 scheduler.step(valid_loss)
@@ -131,13 +137,15 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             test_acc_list.append(test_acc.item())
 
         # Log embeddings
+        pred_list = np.argmax(pred_list[0].cpu().numpy(), axis=1)
         logger.debug("\n Embeddings and labels from last epoch, finetune")
-        logger.debug(f"labels_fin={label_finetune}")
-        logger.debug(f"pred_list={pred_list}")
-        logger.debug(f"z_t={z_t}")
-        logger.debug(f"z_t_aug={z_t_aug}")
-        logger.debug(f"z_f={z_f}")
-        logger.debug(f"z_f_aug={z_f_aug}")
+        logger.debug(f"shapes: {label_finetune[0].numpy().shape}")
+        logger.debug("labels_fin=%s", label_finetune[0].numpy())
+        logger.debug("pred_list=%s"), pred_list
+        logger.debug("z_t=%s", z_t[0].numpy())
+        logger.debug("z_t_aug=%s", z_t_aug[0].numpy())
+        logger.debug("z_f=%s", z_f[0].numpy())
+        logger.debug("z_f_aug=%s", z_f_aug[0].numpy())
 
         performance_array = np.array(performance_list)
         best_performance = performance_array[np.argmax(performance_array[:,0], axis=0)]
@@ -178,7 +186,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
 
 
 def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion, train_loader, config,
-                   device, training_mode, model_F=None, model_F_optimizer=None):
+                   device, training_mode, model_F=None, model_F_optimizer=None, get_embeds=False):
     total_loss = []
     total_acc = []
     total_auc = []
@@ -189,10 +197,11 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     total_loss_c = [] 
     total_loss_TF = []
 
-    data_list = []
-    data_f_list = []
-    aug1_list = []
-    aug1_f_list = []
+    if get_embeds:
+        data_list = []
+        data_f_list = []
+        aug1_list = []
+        aug1_f_list = []
 
     model.train()
 
@@ -209,10 +218,11 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1, aug1_f)
 
         # OBS, resampling ??
-        data_list.append(data)
-        data_f_list.append(data_f)
-        aug1_list.append(aug1)
-        aug1_f_list.append(aug1_f)
+        if get_embeds:
+            data_list.append(data)
+            data_f_list.append(data_f)
+            aug1_list.append(aug1)
+            aug1_f_list.append(aug1_f)
 
         """Compute Pre-train loss"""
         """NTXentLoss: normalized temperature-scaled cross entropy loss. From SimCLR"""
@@ -246,14 +256,18 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     z_t_aug_list = []
     z_f_list = []
     z_f_aug_list = []
-    for i in range(len(data_list)):
-        h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
-        h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
+    if get_embeds:
+        print("############################ lets append it to list")
+        print(len(data_list))
+        for i in range(len(data_list)):
+            print(i)
+            h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
+            h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
 
-        z_t_list.append(z_t)
-        z_t_aug_list.append(z_t_aug)
-        z_f_list.append(z_f)
-        z_f_aug_list.append(z_f_aug)
+            z_t_list.append(z_t)
+            z_t_aug_list.append(z_t_aug)
+            z_f_list.append(z_f)
+            z_f_aug_list.append(z_f_aug)
 
 
 
@@ -276,7 +290,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
 
 
 def model_finetune(model, temporal_contr_model, val_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
-                   classifier=None, classifier_optimizer=None):
+                   classifier=None, classifier_optimizer=None, get_embeds=False):
     model.train()
     classifier.train()
 
@@ -286,12 +300,13 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
     total_prc = []
 
     # Plot embeddings
-    data_list = []
-    data_f_list = []
-    aug1_list = []
-    aug1_f_list = []
-    #labels_list = []
-    pred_list = []
+    if get_embeds:
+        data_list = []
+        data_f_list = []
+        aug1_list = []
+        aug1_f_list = []
+        #labels_list = []
+        pred_list = []
 
     criterion = nn.CrossEntropyLoss()
     outs = np.array([])
@@ -354,12 +369,13 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
             trgs = np.append(trgs, labels.data.cpu().numpy())
 
         # OBS, resampling ??
-        data_list.append(data)
-        data_f_list.append(data_f)
-        aug1_list.append(aug1)
-        aug1_f_list.append(aug1_f)
-        #labels_list.append(labels)
-        pred_list.append(predictions)
+        if get_embeds:
+            data_list.append(data)
+            data_f_list.append(data_f)
+            aug1_list.append(aug1)
+            aug1_f_list.append(aug1_f)
+            #labels_list.append(labels)
+            pred_list.append(predictions)
 
     # Plots (for last batch only)
     # Create embeddings
@@ -367,16 +383,17 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
     z_t_aug_list = []
     z_f_list = []
     z_f_aug_list = []
-    for i in range(len(data_list)):
-        h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
-        h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
+    if get_embeds:
+        for i in range(len(data_list)):
+            h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
+            h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
 
-        z_t_list.append(z_t)
-        z_t_aug_list.append(z_t_aug)
-        z_f_list.append(z_f)
-        z_f_aug_list.append(z_f_aug)
-        # labels_list
-        # pred_list
+            z_t_list.append(z_t)
+            z_t_aug_list.append(z_t_aug)
+            z_f_list.append(z_f)
+            z_f_aug_list.append(z_f_aug)
+            # labels_list
+            # pred_list
 
     labels_numpy = labels.detach().cpu().numpy()
     pred_numpy = np.argmax(pred_numpy, axis=1)
