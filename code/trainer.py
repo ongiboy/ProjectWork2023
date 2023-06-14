@@ -43,7 +43,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         for epoch in range(1, config.num_epoch + 1):
             # Train and validate
             """Train. In fine-tuning, this part is also trained???"""
-            train_loss, train_acc, train_auc, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
+            train_loss, train_acc, train_auc, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
                                                               train_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer)
 
             # Plots
@@ -60,6 +60,12 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                          )
 
         # Plots
+        logger.debug("\n Embeddings and labels from last epoch, pretrain")
+        logger.debug(f"z_t={z_t}")
+        logger.debug(f"z_t_aug={z_t_aug}")
+        logger.debug(f"z_f={z_f}")
+        logger.debug(f"z_f_aug={z_f_aug}")
+
         logger.debug("\nTotal pre-training losses:")
         logger.debug("loss=%s",pretrain_loss_list)
         logger.debug('loss_t= %s', pretrain_loss_t)
@@ -86,7 +92,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         test_acc_list = []
         
         for epoch in range(1, config.num_epoch + 1):
-            valid_loss, valid_acc, valid_auc, valid_prc, emb_finetune, label_finetune, F1 = model_finetune(model, temporal_contr_model, valid_dl, config, device, training_mode,
+            valid_loss, valid_acc, valid_auc, valid_prc, emb_finetune, label_finetune, F1, (z_t, z_t_aug, z_f, z_f_aug, pred_list) = model_finetune(model, temporal_contr_model, valid_dl, config, device, training_mode,
                                                    model_optimizer, model_F=model_F, model_F_optimizer=model_F_optimizer,
                                                         classifier=classifier, classifier_optimizer=classifier_optimizer)
 
@@ -124,13 +130,22 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             test_loss_list.append(test_loss.item())
             test_acc_list.append(test_acc.item())
 
+        # Log embeddings
+        logger.debug("\n Embeddings and labels from last epoch, finetune")
+        logger.debug(f"labels_fin={label_finetune}")
+        logger.debug(f"pred_list={pred_list}")
+        logger.debug(f"z_t={z_t}")
+        logger.debug(f"z_t_aug={z_t_aug}")
+        logger.debug(f"z_f={z_f}")
+        logger.debug(f"z_f_aug={z_f_aug}")
+
         performance_array = np.array(performance_list)
         best_performance = performance_array[np.argmax(performance_array[:,0], axis=0)]
         print('Best Testing: Acc=%.4f| Precision = %.4f | Recall = %.4f | F1 = %.4f | AUROC= %.4f | PRC=%.4f'
               % (best_performance[0], best_performance[1], best_performance[2], best_performance[3], best_performance[4], best_performance[5]))
 
         # Plots
-        logger.debug("############################# SAVED VALUES FOR PLOTS #############################")
+        logger.debug("\n######################## SAVED VALUES FOR PLOTS ########################")
         logger.debug("Finetune_Accuracies= %s", finetune_acc_list)
         logger.debug("Finetune_Losses= %s", finetune_loss_list)
         logger.debug("Test_Accuracies= %s", test_acc_list)
@@ -174,6 +189,11 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     total_loss_c = [] 
     total_loss_TF = []
 
+    data_list = []
+    data_f_list = []
+    aug1_list = []
+    aug1_f_list = []
+
     model.train()
 
     for batch_idx, (data, labels, aug1, data_f, aug1_f) in enumerate(train_loader):
@@ -188,6 +208,11 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         h_t, z_t, h_f, z_f=model(data, data_f)
         h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1, aug1_f)
 
+        # OBS, resampling ??
+        data_list.append(data)
+        data_f_list.append(data_f)
+        aug1_list.append(aug1)
+        aug1_f_list.append(aug1_f)
 
         """Compute Pre-train loss"""
         """NTXentLoss: normalized temperature-scaled cross entropy loss. From SimCLR"""
@@ -214,6 +239,24 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         total_loss_c.append(loss_c.item())
         total_loss.append(loss.item())
 
+    
+    # Plots (for last batch only)
+    # Create embeddings
+    z_t_list = []
+    z_t_aug_list = []
+    z_f_list = []
+    z_f_aug_list = []
+    for i in range(len(data_list)):
+        h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
+        h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
+
+        z_t_list.append(z_t)
+        z_t_aug_list.append(z_t_aug)
+        z_f_list.append(z_f)
+        z_f_aug_list.append(z_f_aug)
+
+
+
     print('preptraining: overall loss:{}, l_t: {}, l_f:{}, l_c:{}'.format(loss,loss_t,loss_f, loss_c))
 
     total_loss = torch.tensor(total_loss).mean()
@@ -229,7 +272,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     else:
         total_acc = torch.tensor(total_acc).mean()
         total_auc = torch.tensor(total_auc).mean()
-    return total_loss, total_acc, total_auc, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF)
+    return total_loss, total_acc, total_auc, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF), (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list)
 
 
 def model_finetune(model, temporal_contr_model, val_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
@@ -241,6 +284,14 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
     total_acc = []
     total_auc = []  # it should be outside of the loop
     total_prc = []
+
+    # Plot embeddings
+    data_list = []
+    data_f_list = []
+    aug1_list = []
+    aug1_f_list = []
+    #labels_list = []
+    pred_list = []
 
     criterion = nn.CrossEntropyLoss()
     outs = np.array([])
@@ -254,7 +305,8 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
         aug1_f = aug1_f.float().to(device)
 
         # """if random initialization:"""
-        # model_optimizer.zero_grad()
+        model_optimizer.zero_grad()
+        classifier_optimizer.zero_grad()
         # model_F_optimizer.zero_grad()
 
         """Produce embeddings"""
@@ -301,6 +353,30 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
             outs = np.append(outs, pred.cpu().numpy())
             trgs = np.append(trgs, labels.data.cpu().numpy())
 
+        # OBS, resampling ??
+        data_list.append(data)
+        data_f_list.append(data_f)
+        aug1_list.append(aug1)
+        aug1_f_list.append(aug1_f)
+        #labels_list.append(labels)
+        pred_list.append(predictions)
+
+    # Plots (for last batch only)
+    # Create embeddings
+    z_t_list = []
+    z_t_aug_list = []
+    z_f_list = []
+    z_f_aug_list = []
+    for i in range(len(data_list)):
+        h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
+        h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
+
+        z_t_list.append(z_t)
+        z_t_aug_list.append(z_t_aug)
+        z_f_list.append(z_f)
+        z_f_aug_list.append(z_f_aug)
+        # labels_list
+        # pred_list
 
     labels_numpy = labels.detach().cpu().numpy()
     pred_numpy = np.argmax(pred_numpy, axis=1)
@@ -319,7 +395,7 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
     total_auc = torch.tensor(total_auc).mean()  # average acc
     total_prc = torch.tensor(total_prc).mean()
 
-    return total_loss, total_acc, total_auc, total_prc, fea_concat_flat, trgs, F1
+    return total_loss, total_acc, total_auc, total_prc, fea_concat_flat, trgs, F1, (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list, pred_list)
 
 def model_test(model, temporal_contr_model, test_dl,config,  device, training_mode, model_F=None, model_F_optimizer=None,
                classifier=None, classifier_optimizer=None):

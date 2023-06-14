@@ -41,14 +41,21 @@ parser.add_argument('--device', default='cpu', type=str,
                     help='cpu or cuda')
 parser.add_argument('--home_path', default=home_dir, type=str,
                     help='Project home directory')
+
+
 parser.add_argument('--subset', default="False", type=str,
                     help='True or False')
 parser.add_argument('--info', default="", type=str,
                     help='Info')
+parser.add_argument('--new_augs', default="False", type=str,
+                    help='Info')
 # args = parser.parse_args()
 args, unknown = parser.parse_known_args()
+
+# New parsers
 subset = args.subset == "True"
 info = args.info
+enable_new_augs = args.new_augs == "True"
 
 device = torch.device(args.device)
 # experiment_description = args.experiment_description
@@ -64,9 +71,15 @@ run_description = args.run_description
 logs_save_dir = args.logs_save_dir
 os.makedirs(logs_save_dir, exist_ok=True)
 
+# New datasets
+if any(data in targetdata for data in ["Depression", "Exoplanets"]):
+    exec(f'from config_files.{targetdata}_Configs import Config as Configs')
+    configs = Configs()
 
-exec(f'from config_files.{sourcedata}_Configs import Config as Configs')
-configs = Configs() # THis is OK???
+# Old datasets
+else:
+    exec(f'from config_files.{pretrain_dataset}_Configs import Config as Configs')
+    configs = Configs()
 
 # # ##### fix random seeds for reproducibility ########
 SEED = args.seed
@@ -103,7 +116,7 @@ logger.debug("=" * 45)
 sourcedata_path = f"datasets/{sourcedata}"  # './data/Epilepsy'
 targetdata_path = f"datasets/{targetdata}"
 # for self-supervised, the data are augmented here. Only self-supervised learning need augmentation
-train_dl, valid_dl, test_dl = data_generator(sourcedata_path, targetdata_path, configs, training_mode, subset = subset)
+train_dl, valid_dl, test_dl = data_generator(sourcedata_path, targetdata_path, configs, training_mode, subset = subset, enable_new_augs=enable_new_augs)
 logger.debug("Data loaded ...")
 
 # Load Model
