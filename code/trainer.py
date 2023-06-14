@@ -46,6 +46,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             """Train. In fine-tuning, this part is also trained???"""
             if epoch == config.num_epoch:
                 get_embeds = True
+                print("We now want embeddings")
             train_loss, train_acc, train_auc, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
                                                               train_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
 
@@ -98,9 +99,10 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         for epoch in range(1, config.num_epoch + 1):
             if epoch == config.num_epoch:
                 get_embeds = True
+                print("We now want embeddings")
             valid_loss, valid_acc, valid_auc, valid_prc, emb_finetune, label_finetune, F1, (z_t, z_t_aug, z_f, z_f_aug, pred_list) = model_finetune(model, temporal_contr_model, valid_dl, config, device, training_mode,
                                                    model_optimizer, model_F=model_F, model_F_optimizer=model_F_optimizer,
-                                                        classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=False)
+                                                        classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=get_embeds)
 
             if training_mode != 'pre_train':  # use scheduler in all other modes.
                 scheduler.step(valid_loss)
