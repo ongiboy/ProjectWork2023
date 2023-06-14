@@ -137,15 +137,14 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             test_acc_list.append(test_acc.item())
 
         # Log embeddings
-        pred_list = np.argmax(pred_list[0].cpu().numpy(), axis=1)
         logger.debug("\n Embeddings and labels from last epoch, finetune")
-        logger.debug(f"shapes: {label_finetune[0].numpy().shape}")
-        logger.debug("labels_fin=%s", label_finetune[0].numpy())
-        logger.debug("pred_list=%s"), pred_list
-        logger.debug("z_t=%s", z_t[0].numpy())
-        logger.debug("z_t_aug=%s", z_t_aug[0].numpy())
-        logger.debug("z_f=%s", z_f[0].numpy())
-        logger.debug("z_f_aug=%s", z_f_aug[0].numpy())
+        logger.debug(f"shapes: {label_finetune.shape}")
+        logger.debug(f"labels_fin=%s", label_finetune)
+        logger.debug("pred_list=%s", pred_list)
+        logger.debug("z_t=%s", z_t )
+        logger.debug("z_t_aug=%s", z_t_aug)
+        logger.debug("z_f=%s", z_f)
+        logger.debug("z_f_aug=%s", z_f_aug)
 
         performance_array = np.array(performance_list)
         best_performance = performance_array[np.argmax(performance_array[:,0], axis=0)]
@@ -375,7 +374,7 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
             aug1_list.append(aug1)
             aug1_f_list.append(aug1_f)
             #labels_list.append(labels)
-            pred_list.append(predictions)
+            pred_list.append(np.argmax(pred_numpy, axis=1))
 
     # Plots (for last batch only)
     # Create embeddings
