@@ -1,8 +1,8 @@
 import numpy as np
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
-
-mode = "pre_trains"  # finetune or pretrain
+modes = ["pretrain", "finetune"]
+mode = modes[1]
 
 #labels only needed if mode == finetune
 labels = [2, 1, 2, 2, 1]
@@ -24,6 +24,7 @@ if mode == "finetune":
     unique_labels = np.unique(labels)
     for label in unique_labels:
         mask = labels == label
+        # class coloring
         plt.scatter(embeddings_pca[mask, 0], embeddings_pca[mask, 1], label=label)
 
 elif mode == "pretrain":
