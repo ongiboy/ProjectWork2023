@@ -1,6 +1,7 @@
 import os
 import pickle
 import sys
+import random
 
 sys.path.append("..")
 import numpy as np
@@ -70,10 +71,11 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         z_t_aug = z_t_aug[0].detach().cpu().numpy()
         z_f = z_f[0].detach().cpu().numpy()
         z_f_aug = z_f_aug[0].detach().cpu().numpy()
-        np.save("code/PCA_embeddings/pretraining/z_t", z_t)
-        np.save("code/PCA_embeddings/pretraining/z_t_aug", z_t_aug)
-        np.save("code/PCA_embeddings/pretraining/z_f", z_f)
-        np.save("code/PCA_embeddings/pretraining/z_f_aug", z_f_aug)
+        embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t", z_t)
+        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t_aug", z_t_aug)
+        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f", z_f)
+        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f_aug", z_f_aug)
 
         logger.debug("\nTotal pre-training losses:")
         logger.debug("loss=%s",pretrain_loss_list)
@@ -147,16 +149,17 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         logger.debug("\n Saved PCA embeddings and labels from last epoch, finetune")
         #logger.debug(f"labels_fin=%s", label_finetune)
         #logger.debug("pred_list=%s", pred_list)
-        np.save("code/PCA_embeddings/finetuning/labels", label_finetune)
-        np.save("code/PCA_embeddings/finetuning/preds", pred_list)
+        embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_labels", label_finetune)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_preds", pred_list)
         z_t = z_t[0].detach().cpu().numpy()
         z_t_aug = z_t_aug[0].detach().cpu().numpy()
         z_f = z_f[0].detach().cpu().numpy()
         z_f_aug = z_f_aug[0].detach().cpu().numpy()
-        np.save("code/PCA_embeddings/finetuning/z_t", z_t)
-        np.save("code/PCA_embeddings/finetuning/z_t_aug", z_t_aug)
-        np.save("code/PCA_embeddings/finetuning/z_f", z_f)
-        np.save("code/PCA_embeddings/finetuning/z_f_aug", z_f_aug)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t", z_t)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t_aug", z_t_aug)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f", z_f)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f_aug", z_f_aug)
 
         performance_array = np.array(performance_list)
         best_performance = performance_array[np.argmax(performance_array[:,0], axis=0)]
