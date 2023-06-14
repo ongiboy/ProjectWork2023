@@ -27,12 +27,12 @@ parser.add_argument('--run_description', default='run1', type=str,
 parser.add_argument('--seed', default=0, type=int, help='seed value')
 
 # 1. self_supervised; 2. finetune (itself contains finetune and test)
-parser.add_argument('--training_mode', default='fine_tune_test', type=str,
+parser.add_argument('--training_mode', default='fine_tune_testt', type=str,
                     help='pre_train, fine_tune_test')
 
 parser.add_argument('--pretrain_dataset', default='SleepEEG', type=str,
                     help='Dataset of choice: SleepEEG, FD_A, HAR, ECG')
-parser.add_argument('--target_dataset', default='Depression_SleepEEG', type=str,
+parser.add_argument('--target_dataset', default='Epilepsy', type=str,
                     help='Dataset of choice: Epilepsy, FD_B, Gesture, EMG')
 
 parser.add_argument('--logs_save_dir', default='experiments_logs', type=str,
@@ -43,7 +43,7 @@ parser.add_argument('--home_path', default=home_dir, type=str,
                     help='Project home directory')
 
 
-parser.add_argument('--subset', default="False", type=str,
+parser.add_argument('--subset', default="True", type=str,
                     help='True or False')
 parser.add_argument('--info', default="", type=str,
                     help='Info')
