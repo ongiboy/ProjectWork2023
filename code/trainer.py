@@ -305,8 +305,8 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
         data_f_list = []
         aug1_list = []
         aug1_f_list = []
-        #labels_list = []
-        pred_list = []
+    #labels_list = []
+    pred_list = []
 
     criterion = nn.CrossEntropyLoss()
     outs = np.array([])
