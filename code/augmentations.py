@@ -171,7 +171,7 @@ def flip(x):
 
 def spike(x, num_spikes, max_spike=2):
     """adds random spikes at random index for each signal """
-    spiked_x = x.copy()
+    spiked_x = x.copy().astype('float64')
 
     # loop over each signal/row
     for i in range(spiked_x.shape[0]):
@@ -189,7 +189,7 @@ def spike(x, num_spikes, max_spike=2):
 
 def slope_trend(x, max_stds=1):
     """adds a random slope to each signal"""
-    sloped_x = x.copy()
+    sloped_x = x.copy().astype('float64')
 
     # loop over each signal/row
     for i in range(sloped_x.shape[0]):
@@ -203,12 +203,12 @@ def slope_trend(x, max_stds=1):
         slope = (end_point-start_point)/len(signal)
         slope_array = np.array([j*slope for j in range(len(signal))])
 
-        sloped_x[i, 0, :] += slope_array
+        sloped_x[i, 0, :] += slope_array.astype('float64')
     return sloped_x
 
 def step_trend(x, num_steps, max_step=1):
     """Adds step-like trends to signals"""
-    stepped_x = x.copy()
+    stepped_x = x.copy().astype('float64')
 
     # loop over each signal/row
     for i in range(stepped_x.shape[0]):
@@ -222,9 +222,9 @@ def step_trend(x, num_steps, max_step=1):
 
             step_magnitude = np.random.uniform(0, max_step) * std
             step_direction = np.sign(signal[right_index] - signal[left_index])
-            step_array = [step_direction * step_magnitude * j for j in range(right_index - left_index + 1)]
+            step_array = [step_direction * step_magnitude * (j//2) for j in range(right_index - left_index + 1)]
 
-            stepped_x[i, 0, left_index:right_index+1] += step_array
+            stepped_x[i, 0, left_index:right_index+1] += np.array(step_array).astype('float64')
     return stepped_x
 
 # FD
