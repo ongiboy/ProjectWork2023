@@ -228,5 +228,22 @@ def step_trend(x, num_steps, max_step=1):
     return stepped_x
 
 # FD
-def noise_replace():
-    pass
+def noise_replace(x, ratio=0.05):
+    """ Replaces random frequencies with random (uniform) values """
+    # uniform random tensor - max values equal to max value of the corresponding row in x
+    max_values, _ = torch.max(x, dim=1)
+    max_tensor = max_values.unsqueeze(1).expand_as(x) 
+    tensor_uniform = torch.rand_like(x) * max_tensor
+
+    mask = torch.cuda.FloatTensor(x.shape).uniform_() > ratio # choose "ratio" amount of points
+    mask = mask.to(x.device)
+    x_muted = x*mask # removes certain points
+    return x_muted + ~mask * tensor_uniform # the points removed are replaced by noise
+
+def scale(x):
+    """ Multiplies frequency domain with a scalar (same as scaling time domain) """
+    scal = np.random.normal(1,0.2)
+    return x*scal
+
+X = torch.from_numpy(np.random.rand(2,1,100))
+print()
