@@ -72,6 +72,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         z_f = z_f[0].detach().cpu().numpy()
         z_f_aug = z_f_aug[0].detach().cpu().numpy()
         embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        logger.debug(f"embed name from this run: {embed_name}")
         np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t", z_t)
         np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t_aug", z_t_aug)
         np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f", z_f)
@@ -150,6 +151,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         #logger.debug(f"labels_fin=%s", label_finetune)
         #logger.debug("pred_list=%s", pred_list)
         embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        logger.debug(f"embed name from this run: {embed_name}")
         np.save(f"code/PCA_embeddings/finetuning/{embed_name}_labels", label_finetune)
         np.save(f"code/PCA_embeddings/finetuning/{embed_name}_preds", pred_list)
         z_t = z_t[0].detach().cpu().numpy()
@@ -253,6 +255,19 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         lam = 0.5
         loss = lam*(loss_t + loss_f) + (1-lam)*loss_c
 
+        # Eval on validation set
+        model.eval()
+        h_t_val, z_t_val, h_f_val, z_f_val=model(data_val, data_f_val)
+        h_t_aug_val, z_t_aug_val, h_f_aug_val, z_f_aug_val=model(aug1_val, aug1_f_val)
+        loss_t_val = nt_xent_criterion(h_t_val, h_t_aug_val)
+        loss_f_val = nt_xent_criterion(h_f_val, h_f_aug_val)
+        l_TF_val = nt_xent_criterion(z_t_val, z_f_val)
+        l_1_val, l_2_val, l_3_val = nt_xent_criterion(z_t_val, z_f_aug_val), nt_xent_criterion(z_t_aug_val, z_f_val), nt_xent_criterion(z_t_aug_val, z_f_aug_val)
+        loss_c_val = (1+ l_TF_val -l_1_val) + (1+ l_TF_val -l_2_val) + (1+ l_TF_val -l_3_val)
+        loss_val = lam*(loss_t_val + loss_f_val) + (1-lam)*loss_c_val
+        model.train()
+
+
         loss.backward()
         model_optimizer.step()
 
@@ -263,9 +278,11 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         total_loss_c.append(loss_c.item())
         total_loss.append(loss.item())
 
+
     
     # Plots (for last batch only)
     # Create embeddings
+    model.eval()
     z_t_list = []
     z_t_aug_list = []
     z_f_list = []
@@ -393,6 +410,7 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
 
     # Plots (for last batch only)
     # Create embeddings
+    model.eval()
     z_t_list = []
     z_t_aug_list = []
     z_f_list = []
