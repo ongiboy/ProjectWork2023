@@ -107,7 +107,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         test_acc_list = []
 
         get_embeds = 1 # 0=No embeds, 1=Embeds_before, 2=Embeds_after
-        embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        embed_name = str(random.random())[2:6] # give embed files random name so it doesnt get overwritten
         logger.debug(f"embed name from this run: {embed_name}")
         
         for epoch in range(1, config.num_epoch + 1):
@@ -117,7 +117,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             valid_loss, valid_acc, valid_auc, valid_prc, emb_finetune, label_finetune, F1, (z_t, z_t_aug, z_f, z_f_aug, pred_list), (z_t_test, z_t_aug_test, z_f_test, z_f_aug_test, labels_test) = model_finetune(model, temporal_contr_model, valid_dl, test_dl, config, device, training_mode,
                                                    model_optimizer, model_F=model_F, model_F_optimizer=model_F_optimizer,
                                                         classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=get_embeds)
-            if epoch == 1: # Embeds before fine tuning
+            if epoch == 1:#and get_embeds==1: # Embeds before fine tuning
                 get_embeds = 0 # stop returning embeds
 
                 # Fine tune embeds
@@ -137,7 +137,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                 np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_f", z_f_test[0].detach().cpu().numpy())
                 np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_f_aug", z_f_aug_test[0].detach().cpu().numpy())
             
-            if epoch == config.num_epoch: # Embeds after finetune
+            if epoch == config.num_epoch:#and get_embeds==2: # Embeds after finetune
                 # Fine tune embeds
                 logger.debug("\n Saved PCA embeddings and labels from after finetune for finetune data")
                 np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_labels", label_finetune)
