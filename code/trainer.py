@@ -50,8 +50,11 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             if epoch == config.num_epoch:
                 get_embeds = True
                 print("We now want embeddings")
-            train_loss, train_acc, train_auc, loss_val, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
+            train_loss, train_acc, train_auc, loss_val, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
                                                               train_dl, loss_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
+            # train_loss, train_acc, train_auc, loss_val, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
+            #                                                   train_dl, loss_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
+
 
             # Plots
             pretrain_loss_list.append(train_loss.item())
@@ -67,18 +70,18 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                          f'Train Loss     : {train_loss:.4f}\t | \tTrain Accuracy     : {train_acc:2.4f}\t | \tTrain AUC : {train_auc:2.4f}\n'
                          )
 
-        # Plots
-        logger.debug("\n Saved PCA embeddings and labels from last epoch, pretrain")
-        z_t = z_t[0].detach().cpu().numpy()
-        z_t_aug = z_t_aug[0].detach().cpu().numpy()
-        z_f = z_f[0].detach().cpu().numpy()
-        z_f_aug = z_f_aug[0].detach().cpu().numpy()
-        embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
-        logger.debug(f"embed name from this run: {embed_name}")
-        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t", z_t)
-        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t_aug", z_t_aug)
-        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f", z_f)
-        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f_aug", z_f_aug)
+        # # Plots
+        # logger.debug("\n Saved PCA embeddings and labels from last epoch, pretrain")
+        # z_t = z_t[0].detach().cpu().numpy()
+        # z_t_aug = z_t_aug[0].detach().cpu().numpy()
+        # z_f = z_f[0].detach().cpu().numpy()
+        # z_f_aug = z_f_aug[0].detach().cpu().numpy()
+        # embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        # logger.debug(f"embed name from this run: {embed_name}")
+        # np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t", z_t)
+        # np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t_aug", z_t_aug)
+        # np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f", z_f)
+        # np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f_aug", z_f_aug)
 
         logger.debug("\nTotal pre-training losses:")
         logger.debug("loss=%s",pretrain_loss_list)
@@ -218,11 +221,11 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     total_loss_c = [] 
     total_loss_TF = []
 
-    if get_embeds:
-        data_list = []
-        data_f_list = []
-        aug1_list = []
-        aug1_f_list = []
+    # if get_embeds:
+    #     data_list = []
+    #     data_f_list = []
+    #     aug1_list = []
+    #     aug1_f_list = []
 
     model.train()
 
@@ -239,11 +242,11 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1, aug1_f)
 
         # OBS, resampling ??
-        if get_embeds:
-            data_list.append(data)
-            data_f_list.append(data_f)
-            aug1_list.append(aug1)
-            aug1_f_list.append(aug1_f)
+        # if get_embeds:
+        #     data_list.append(data)
+        #     data_f_list.append(data_f)
+        #     aug1_list.append(aug1)
+        #     aug1_f_list.append(aug1_f)
 
         """Compute Pre-train loss"""
         """NTXentLoss: normalized temperature-scaled cross entropy loss. From SimCLR"""
@@ -294,23 +297,23 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
 
     # Plots (for last batch only)
     # Create embeddings
-    model.eval()
-    z_t_list = []
-    z_t_aug_list = []
-    z_f_list = []
-    z_f_aug_list = []
-    if get_embeds:
-        print("############################ lets append it to list")
-        print(len(data_list))
-        for i in range(len(data_list)):
-            print(i)
-            h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
-            h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
+    # model.eval()
+    # z_t_list = []
+    # z_t_aug_list = []
+    # z_f_list = []
+    # z_f_aug_list = []
+    # if get_embeds:
+    #     print("############################ lets append it to list")
+    #     print(len(data_list))
+    #     for i in range(len(data_list)):
+    #         print(i)
+    #         h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
+    #         h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
 
-            z_t_list.append(z_t)
-            z_t_aug_list.append(z_t_aug)
-            z_f_list.append(z_f)
-            z_f_aug_list.append(z_f_aug)
+    #         z_t_list.append(z_t)
+    #         z_t_aug_list.append(z_t_aug)
+    #         z_f_list.append(z_f)
+    #         z_f_aug_list.append(z_f_aug)
 
     print('preptraining: overall loss:{}, l_t: {}, l_f:{}, l_c:{}'.format(loss,loss_t,loss_f, loss_c))
 
@@ -327,8 +330,10 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     else:
         total_acc = torch.tensor(total_acc).mean()
         total_auc = torch.tensor(total_auc).mean()
-    return total_loss, total_acc, total_auc, loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF), (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list)
-
+    
+    # return total_loss, total_acc, total_auc, loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF), (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list)
+    return total_loss, total_acc, total_auc, loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF)
+    
 
 def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
                    classifier=None, classifier_optimizer=None, get_embeds=0):
