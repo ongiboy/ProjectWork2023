@@ -11,3 +11,4 @@ hpc/runs/**
 **_env
 code/PCA_embeddings/finetuning/*.npy
 code/PCA_embeddings/pretraining/*.npy
+code/PCA_embeddings/finetuning/gem
