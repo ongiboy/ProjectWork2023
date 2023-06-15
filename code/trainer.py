@@ -62,7 +62,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             pretrain_loss_f.append(train_loss_f.item())
             pretrain_loss_c.append(train_loss_c.item())
             pretrain_loss_TF.append(train_loss_TF.item())
-            pretrain_loss_val.append(loss_val)
+            pretrain_loss_val.append(loss_val.item())
 
             if training_mode != 'self_supervised':  # use scheduler in all other modes.
                 scheduler.step(train_loss)
@@ -228,7 +228,6 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     #     aug1_f_list = []
 
     model.train()
-
     for batch_idx, (data, labels, aug1, data_f, aug1_f) in enumerate(train_loader):
         data, labels = data.float().to(device), labels.long().to(device) # data: [128, 1, 178], labels: [128]
         aug1 = aug1.float().to(device)  # aug1 = aug2 : [128, 1, 178]
@@ -273,26 +272,28 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         total_loss_c.append(loss_c.item())
         total_loss.append(loss.item())
 
-    # Eval on validation set (randomly select 60 samples)
-    idx = random.sample(range(0, len(loss_loader.dataset.x_data)), 128)
-    data_val = loss_loader.dataset.x_data[idx]
-    data_f_val = loss_loader.dataset.x_data_f[idx]
-    aug1_val = loss_loader.dataset.aug1[idx]
-    aug1_f_val = loss_loader.dataset.aug1_f[idx]
-
-    data_val = data_val.float().to(device) # data: [128, 1, 178]
-    aug1_val = aug1_val.float().to(device)  # aug1 = aug2 : [128, 1, 178]
-    data_f_val, aug1_f_val = data_f_val.float().to(device), aug1_f_val.float().to(device)  # aug1 = aug2 : [128, 1, 178]
-
+    # Eval on validation set
     model.eval()
-    h_t_val, z_t_val, h_f_val, z_f_val=model(data_val, data_f_val)
-    h_t_aug_val, z_t_aug_val, h_f_aug_val, z_f_aug_val=model(aug1_val, aug1_f_val)
-    loss_t_val = nt_xent_criterion(h_t_val, h_t_aug_val)
-    loss_f_val = nt_xent_criterion(h_f_val, h_f_aug_val)
-    l_TF_val = nt_xent_criterion(z_t_val, z_f_val)
-    l_1_val, l_2_val, l_3_val = nt_xent_criterion(z_t_val, z_f_aug_val), nt_xent_criterion(z_t_aug_val, z_f_val), nt_xent_criterion(z_t_aug_val, z_f_aug_val)
-    loss_c_val = (1+ l_TF_val -l_1_val) + (1+ l_TF_val -l_2_val) + (1+ l_TF_val -l_3_val)
-    loss_val = lam*(loss_t_val + loss_f_val) + (1-lam)*loss_c_val
+    loss_vals = []
+    val_count = 0
+    for batch_idx, (data_val, _ , aug1_val, data_f_val, aug1_f_val) in enumerate(loss_loader):
+        val_count += 1
+        data_val = data_val.float().to(device) # data: [128, 1, 178]
+        aug1_val = aug1_val.float().to(device)  # aug1 = aug2 : [128, 1, 178]
+        data_f_val, aug1_f_val = data_f_val.float().to(device), aug1_f_val.float().to(device)  # aug1 = aug2 : [128, 1, 178]
+
+        
+        h_t_val, z_t_val, h_f_val, z_f_val=model(data_val, data_f_val)
+        h_t_aug_val, z_t_aug_val, h_f_aug_val, z_f_aug_val=model(aug1_val, aug1_f_val)
+        loss_t_val = nt_xent_criterion(h_t_val, h_t_aug_val)
+        loss_f_val = nt_xent_criterion(h_f_val, h_f_aug_val)
+        l_TF_val = nt_xent_criterion(z_t_val, z_f_val)
+        l_1_val, l_2_val, l_3_val = nt_xent_criterion(z_t_val, z_f_aug_val), nt_xent_criterion(z_t_aug_val, z_f_val), nt_xent_criterion(z_t_aug_val, z_f_aug_val)
+        loss_c_val = (1+ l_TF_val -l_1_val) + (1+ l_TF_val -l_2_val) + (1+ l_TF_val -l_3_val)
+        loss_val = lam*(loss_t_val + loss_f_val) + (1-lam)*loss_c_val
+        loss_vals.append(loss_val)
+        if val_count == 20:
+            break
     
 
     # Plots (for last batch only)
@@ -323,6 +324,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     ave_loss_f = torch.tensor(total_loss_f).mean()
     ave_loss_TF = torch.tensor(total_loss_TF).mean()
     ave_loss_c = torch.tensor(total_loss_c).mean()
+    ave_loss_val = torch.tensor(loss_vals).mean()
 
     if training_mode == "pre_train":
         total_acc = 0
@@ -332,7 +334,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         total_auc = torch.tensor(total_auc).mean()
     
     # return total_loss, total_acc, total_auc, loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF), (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list)
-    return total_loss, total_acc, total_auc, loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF)
+    return total_loss, total_acc, total_auc, ave_loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF)
     
 
 def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
