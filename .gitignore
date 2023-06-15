@@ -9,4 +9,5 @@ datasets
 /experiments_logs/
 hpc/runs/**
 **_env
-code/PCA_embeddings/**.npy
+code/PCA_embeddings/finetuning/*.npy
+code/PCA_embeddings/pretraining/*.npy

@@ -119,16 +119,16 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                                                         classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=get_embeds)
             if epoch == 1: # Embeds before fine tuning
                 logger.debug("\n Saved PCA embeddings and labels from before finetune")
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_labels_bef", label_finetune)
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_preds_bef", pred_list)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_labels", label_finetune)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_preds", pred_list)
                 z_t = z_t[0].detach().cpu().numpy()
                 z_t_aug = z_t_aug[0].detach().cpu().numpy()
                 z_f = z_f[0].detach().cpu().numpy()
                 z_f_aug = z_f_aug[0].detach().cpu().numpy()
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t_bef", z_t)
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t_aug_bef", z_t_aug)
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f_bef", z_f)
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f_aug_bef", z_f_aug)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_z_t", z_t)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_z_t_aug", z_t_aug)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_z_f", z_f)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_z_f_aug", z_f_aug)
                 get_embeds = 0 # stop returning embeds
             
             if training_mode != 'pre_train':  # use scheduler in all other modes.
@@ -170,16 +170,16 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         #logger.debug("pred_list=%s", pred_list)
         # Embeddings
         logger.debug("\n Saved PCA embeddings and labels from last epoch, finetune")
-        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_labels", label_finetune)
-        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_preds", pred_list)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_labels", label_finetune)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_preds", pred_list)
         z_t = z_t[0].detach().cpu().numpy()
         z_t_aug = z_t_aug[0].detach().cpu().numpy()
         z_f = z_f[0].detach().cpu().numpy()
         z_f_aug = z_f_aug[0].detach().cpu().numpy()
-        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t", z_t)
-        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t_aug", z_t_aug)
-        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f", z_f)
-        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f_aug", z_f_aug)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_z_t", z_t)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_z_t_aug", z_t_aug)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_z_f", z_f)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_z_f_aug", z_f_aug)
 
         performance_array = np.array(performance_list)
         best_performance = performance_array[np.argmax(performance_array[:,0], axis=0)]
@@ -335,6 +335,11 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
     if get_embeds==1: # Embeds before finetuning
         model.eval()
         for data, labels, aug1, data_f, aug1_f in val_dl:
+            data, labels = data.float().to(device), labels.long().to(device)
+            data_f = data_f.float().to(device)
+            aug1 = aug1.float().to(device)
+            aug1_f = aug1_f.float().to(device)
+
             h_t, z_t, h_f, z_f=model(data, data_f)
             h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1, aug1_f)
             
