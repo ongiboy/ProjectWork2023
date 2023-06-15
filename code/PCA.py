@@ -13,20 +13,22 @@ if __name__ == "__main__":
     modes = ["pretraining", "finetuning"]
     mode = modes[1]
     array_number = "9868"
-    plot = ""
+    plot = "" # "bef" or "aft"
+    test = "" # "" or "_test"
+
 
     #labels only needed if mode == finetune
-    z_t = np.load("code/PCA_embeddings/{}/{}_{}z_t.npy".format(mode,array_number,plot))
+    z_t = np.load("code/PCA_embeddings/{}/{}_{}{}_z_t.npy".format(mode,array_number,plot,test))
     #z_t_aug = np.load(f"code/PCA_embeddings/{mode}/z_t_aug.npy")
-    z_f = np.load("code/PCA_embeddings/{}/{}_{}z_f.npy".format(mode,array_number,plot))
+    z_f = np.load("code/PCA_embeddings/{}/{}_{}{}_z_f.npy".format(mode,array_number,plot,test))
     #z_f_aug = np.load(f"code/PCA_embeddings/{mode}/z_f_aug.npy")
-
+    
     embeddings = np.vstack((z_t, z_f))  # z_t_aug z_f_aug
     embeddings_pca = PCA_embeddings(embeddings)
 
     plt.figure(figsize=(8, 6))
     if mode == "finetuning":
-        labels = list(np.load("code/PCA_embeddings/{}/{}_{}labels.npy".format(mode,array_number,plot))) * 2
+        labels = list(np.load("code/PCA_embeddings/{}/{}_{}{}_labels.npy".format(mode,array_number,plot,test))) * 2
         unique_labels = np.unique(labels)
         for label in unique_labels:
             mask = labels == label
