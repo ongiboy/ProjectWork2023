@@ -102,16 +102,32 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         finetune_acc_list = []
         test_loss_list = []
         test_acc_list = []
-        get_embeds = False
+
+        get_embeds = 1 # 0=No embeds, 1=Embeds_before, 2=Embeds_after
+        embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        logger.debug(f"embed name from this run: {embed_name}")
         
         for epoch in range(1, config.num_epoch + 1):
-            if epoch == config.num_epoch:
-                get_embeds = True
+            if epoch==config.num_epoch:
+                get_embeds = 2
                 print("We now want embeddings")
             valid_loss, valid_acc, valid_auc, valid_prc, emb_finetune, label_finetune, F1, (z_t, z_t_aug, z_f, z_f_aug, pred_list) = model_finetune(model, temporal_contr_model, valid_dl, config, device, training_mode,
                                                    model_optimizer, model_F=model_F, model_F_optimizer=model_F_optimizer,
                                                         classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=get_embeds)
-
+            if epoch == 1: # Embeds before fine tuning
+                logger.debug("\n Saved PCA embeddings and labels from before finetune")
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_labels_bef", label_finetune)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_preds_bef", pred_list)
+                z_t = z_t[0].detach().cpu().numpy()
+                z_t_aug = z_t_aug[0].detach().cpu().numpy()
+                z_f = z_f[0].detach().cpu().numpy()
+                z_f_aug = z_f_aug[0].detach().cpu().numpy()
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t_bef", z_t)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t_aug_bef", z_t_aug)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f_bef", z_f)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f_aug_bef", z_f_aug)
+                get_embeds = 0 # stop returning embeds
+            
             if training_mode != 'pre_train':  # use scheduler in all other modes.
                 scheduler.step(valid_loss)
             logger.debug(f'\nEpoch : {epoch}\n'
@@ -145,13 +161,12 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             finetune_acc_list.append(valid_acc.item())
             test_loss_list.append(test_loss.item())
             test_acc_list.append(test_acc.item())
-
-        # Embeddings
-        logger.debug("\n Saved PCA embeddings and labels from last epoch, finetune")
+        
+        
         #logger.debug(f"labels_fin=%s", label_finetune)
         #logger.debug("pred_list=%s", pred_list)
-        embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
-        logger.debug(f"embed name from this run: {embed_name}")
+        # Embeddings
+        logger.debug("\n Saved PCA embeddings and labels from last epoch, finetune")
         np.save(f"code/PCA_embeddings/finetuning/{embed_name}_labels", label_finetune)
         np.save(f"code/PCA_embeddings/finetuning/{embed_name}_preds", pred_list)
         z_t = z_t[0].detach().cpu().numpy()
@@ -321,9 +336,8 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
 
 
 def model_finetune(model, temporal_contr_model, val_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
-                   classifier=None, classifier_optimizer=None, get_embeds=False):
-    model.train()
-    classifier.train()
+                   classifier=None, classifier_optimizer=None, get_embeds=0):
+    
 
     total_loss = []
     total_acc = []
@@ -331,14 +345,33 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
     total_prc = []
 
     # Plot embeddings
-    if get_embeds:
+    z_t_list = []
+    z_t_aug_list = []
+    z_f_list = []
+    z_f_aug_list = []
+    if get_embeds==1: # Embeds before finetuning
+        model.eval()
+        for data, labels, aug1, data_f, aug1_f in val_dl:
+            h_t, z_t, h_f, z_f=model(data, data_f)
+            h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1, aug1_f)
+            
+            z_t_list.append(z_t)
+            z_t_aug_list.append(z_t_aug)
+            z_f_list.append(z_f)
+            z_f_aug_list.append(z_f_aug)
+            # labels_list
+            # pred_list
+
+    if get_embeds==2: # lists to collect data
         data_list = []
         data_f_list = []
         aug1_list = []
         aug1_f_list = []
     #labels_list = []
     pred_list = []
-
+    
+    model.train()
+    classifier.train()
     criterion = nn.CrossEntropyLoss()
     outs = np.array([])
     trgs = np.array([])
@@ -400,7 +433,7 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
             trgs = np.append(trgs, labels.data.cpu().numpy())
 
         # OBS, resampling ??
-        if get_embeds:
+        if get_embeds==2:
             data_list.append(data)
             data_f_list.append(data_f)
             aug1_list.append(aug1)
@@ -410,12 +443,8 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
 
     # Plots (for last batch only)
     # Create embeddings
-    model.eval()
-    z_t_list = []
-    z_t_aug_list = []
-    z_f_list = []
-    z_f_aug_list = []
-    if get_embeds:
+    if get_embeds==2: # get embeddings of all data after finetuning - OR can just make one big loop here
+        model.eval()
         for i in range(len(data_list)):
             h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
             h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
@@ -426,6 +455,7 @@ def model_finetune(model, temporal_contr_model, val_dl, config, device, training
             z_f_aug_list.append(z_f_aug)
             # labels_list
             # pred_list
+    
 
     labels_numpy = labels.detach().cpu().numpy()
     pred_numpy = np.argmax(pred_numpy, axis=1)
