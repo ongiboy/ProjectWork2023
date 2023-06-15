@@ -70,6 +70,7 @@ class Load_Dataset(Dataset):
 def data_generator(sourcedata_path, targetdata_path, configs, training_mode, subset = True, enable_new_augs=False):
 
     train_dataset = torch.load(os.path.join(sourcedata_path, "train.pt"))
+    pretrain_loss_dataset = torch.load(os.path.join(sourcedata_path, "test.pt"))
     finetune_dataset = torch.load(os.path.join(targetdata_path, "train.pt"))
     test_dataset = torch.load(os.path.join(targetdata_path, "test.pt"))
     """ Dataset notes:
@@ -80,6 +81,7 @@ def data_generator(sourcedata_path, targetdata_path, configs, training_mode, sub
 
     # subset = True # if true, use a subset for debugging.
     train_dataset = Load_Dataset(train_dataset, configs, training_mode, target_dataset_size=configs.batch_size, subset=subset, enable_new_augs=enable_new_augs) # for self-supervised, the data are augmented here
+    pretrain_loss_dataset = Load_Dataset(pretrain_loss_dataset, configs, training_mode, target_dataset_size=configs.batch_size, subset=subset, enable_new_augs=enable_new_augs)
     finetune_dataset = Load_Dataset(finetune_dataset, configs, training_mode, target_dataset_size=configs.target_batch_size, subset=subset, enable_new_augs=enable_new_augs)
     if test_dataset['labels'].shape[0]>10*configs.target_batch_size:
         test_dataset = Load_Dataset(test_dataset, configs, training_mode, target_dataset_size=configs.target_batch_size*10, subset=subset, enable_new_augs=enable_new_augs)
@@ -87,6 +89,10 @@ def data_generator(sourcedata_path, targetdata_path, configs, training_mode, sub
         test_dataset = Load_Dataset(test_dataset, configs, training_mode, target_dataset_size=configs.target_batch_size, subset=subset, enable_new_augs=enable_new_augs)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=configs.batch_size,
+                                               shuffle=True, drop_last=configs.drop_last,
+                                               num_workers=0)
+
+    loss_loader = torch.utils.data.DataLoader(dataset=pretrain_loss_dataset, batch_size=configs.batch_size,
                                                shuffle=True, drop_last=configs.drop_last,
                                                num_workers=0)
 
@@ -99,4 +105,4 @@ def data_generator(sourcedata_path, targetdata_path, configs, training_mode, sub
                                               shuffle=True, drop_last=False,
                                               num_workers=0)
 
-    return train_loader, valid_loader, test_loader
+    return train_loader, loss_loader, valid_loader, test_loader

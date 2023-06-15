@@ -27,7 +27,7 @@ parser.add_argument('--run_description', default='run1', type=str,
 parser.add_argument('--seed', default=0, type=int, help='seed value')
 
 # 1. self_supervised; 2. finetune (itself contains finetune and test)
-parser.add_argument('--training_mode', default='fine_tune_testt', type=str,
+parser.add_argument('--training_mode', default='pre_train', type=str,
                     help='pre_train, fine_tune_test')
 
 parser.add_argument('--pretrain_dataset', default='SleepEEG', type=str,
@@ -116,7 +116,7 @@ logger.debug("=" * 45)
 sourcedata_path = f"datasets/{sourcedata}"  # './data/Epilepsy'
 targetdata_path = f"datasets/{targetdata}"
 # for self-supervised, the data are augmented here. Only self-supervised learning need augmentation
-train_dl, valid_dl, test_dl = data_generator(sourcedata_path, targetdata_path, configs, training_mode, subset = subset, enable_new_augs=enable_new_augs)
+train_dl, loss_dl, valid_dl, test_dl = data_generator(sourcedata_path, targetdata_path, configs, training_mode, subset = subset, enable_new_augs=enable_new_augs)
 logger.debug("Data loaded ...")
 
 # Load Model
@@ -150,7 +150,7 @@ if training_mode == "pre_train":  # to do it only once
     copy_Files(os.path.join(logs_save_dir, experiment_description, run_description), sourcedata)
 
 # Trainer
-Trainer(TFC_model,  temporal_contr_model, model_optimizer, temporal_contr_optimizer, train_dl, valid_dl, test_dl, device,
+Trainer(TFC_model,  temporal_contr_model, model_optimizer, temporal_contr_optimizer, train_dl, loss_dl, valid_dl, test_dl, device,
         logger, configs, experiment_log_dir, training_mode, model_F=None, model_F_optimizer = None,
         classifier=classifier, classifier_optimizer=classifier_optimizer)
 
