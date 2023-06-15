@@ -1,6 +1,7 @@
 import os
 import pickle
 import sys
+import random
 
 sys.path.append("..")
 import numpy as np
@@ -14,6 +15,7 @@ from sklearn.metrics import roc_auc_score, classification_report, confusion_matr
 from sklearn.neighbors import KNeighborsClassifier
 
 from loss import * #NTXentLoss, NTXentLoss_poly
+from PCA import PCA_embeddings
 
 def one_hot_encoding(X):
     X = [int(x) for x in X]
@@ -46,6 +48,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             """Train. In fine-tuning, this part is also trained???"""
             if epoch == config.num_epoch:
                 get_embeds = True
+                print("We now want embeddings")
             train_loss, train_acc, train_auc, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
                                                               train_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
 
@@ -63,11 +66,16 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                          )
 
         # Plots
-        logger.debug("\n Embeddings and labels from last epoch, pretrain")
-        logger.debug(f"z_t={z_t}")
-        logger.debug(f"z_t_aug={z_t_aug}")
-        logger.debug(f"z_f={z_f}")
-        logger.debug(f"z_f_aug={z_f_aug}")
+        logger.debug("\n Saved PCA embeddings and labels from last epoch, pretrain")
+        z_t = z_t[0].detach().cpu().numpy()
+        z_t_aug = z_t_aug[0].detach().cpu().numpy()
+        z_f = z_f[0].detach().cpu().numpy()
+        z_f_aug = z_f_aug[0].detach().cpu().numpy()
+        embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t", z_t)
+        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t_aug", z_t_aug)
+        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f", z_f)
+        np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f_aug", z_f_aug)
 
         logger.debug("\nTotal pre-training losses:")
         logger.debug("loss=%s",pretrain_loss_list)
@@ -98,9 +106,10 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         for epoch in range(1, config.num_epoch + 1):
             if epoch == config.num_epoch:
                 get_embeds = True
+                print("We now want embeddings")
             valid_loss, valid_acc, valid_auc, valid_prc, emb_finetune, label_finetune, F1, (z_t, z_t_aug, z_f, z_f_aug, pred_list) = model_finetune(model, temporal_contr_model, valid_dl, config, device, training_mode,
                                                    model_optimizer, model_F=model_F, model_F_optimizer=model_F_optimizer,
-                                                        classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=False)
+                                                        classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=get_embeds)
 
             if training_mode != 'pre_train':  # use scheduler in all other modes.
                 scheduler.step(valid_loss)
@@ -136,15 +145,21 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             test_loss_list.append(test_loss.item())
             test_acc_list.append(test_acc.item())
 
-        # Log embeddings
-        logger.debug("\n Embeddings and labels from last epoch, finetune")
-        logger.debug(f"shapes: {label_finetune.shape}")
-        logger.debug(f"labels_fin=%s", label_finetune)
-        logger.debug("pred_list=%s", pred_list)
-        logger.debug("z_t=%s", z_t )
-        logger.debug("z_t_aug=%s", z_t_aug)
-        logger.debug("z_f=%s", z_f)
-        logger.debug("z_f_aug=%s", z_f_aug)
+        # Embeddings
+        logger.debug("\n Saved PCA embeddings and labels from last epoch, finetune")
+        #logger.debug(f"labels_fin=%s", label_finetune)
+        #logger.debug("pred_list=%s", pred_list)
+        embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_labels", label_finetune)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_preds", pred_list)
+        z_t = z_t[0].detach().cpu().numpy()
+        z_t_aug = z_t_aug[0].detach().cpu().numpy()
+        z_f = z_f[0].detach().cpu().numpy()
+        z_f_aug = z_f_aug[0].detach().cpu().numpy()
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t", z_t)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_t_aug", z_t_aug)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f", z_f)
+        np.save(f"code/PCA_embeddings/finetuning/{embed_name}_z_f_aug", z_f_aug)
 
         performance_array = np.array(performance_list)
         best_performance = performance_array[np.argmax(performance_array[:,0], axis=0)]
@@ -159,26 +174,26 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         logger.debug("Test_Losses= %s", test_loss_list)
         logger.debug("##################################################################################")
 
-        # train classifier: KNN
-        neigh = KNeighborsClassifier(n_neighbors=1)
-        neigh.fit(emb_finetune.detach().cpu().numpy(), label_finetune)
-        knn_acc_train = neigh.score(emb_finetune.detach().cpu().numpy(), label_finetune)
-        print('KNN finetune acc:', knn_acc_train)
-        # test the downstream classifier
-        representation_test = emb_test.detach().cpu().numpy()
-        knn_result = neigh.predict(representation_test)
-        knn_result_score = neigh.predict_proba(representation_test)
-        one_hot_label_test = one_hot_encoding(label_test)
-        print(classification_report(label_test, knn_result, digits=4))
-        print(confusion_matrix(label_test, knn_result))
-        knn_acc = accuracy_score(label_test, knn_result)
-        precision = precision_score(label_test, knn_result, average='macro', )
-        recall = recall_score(label_test, knn_result, average='macro', )
-        F1 = f1_score(label_test, knn_result, average='macro')
-        auc = roc_auc_score(knn_result_score, one_hot_label_test, average="macro", multi_class="ovr")
-        prc = average_precision_score(knn_result_score, one_hot_label_test, average="macro")
-        print("KNN Train Acc:{}. '\n' Test: acc {}, precision {}, Recall {}, F1 {}, AUROC {}, AUPRC {}"
-              "".format(knn_acc_train, knn_acc, precision, recall, F1, auc, prc))
+        # # train classifier: KNN
+        # neigh = KNeighborsClassifier(n_neighbors=1)
+        # neigh.fit(emb_finetune.detach().cpu().numpy(), label_finetune)
+        # knn_acc_train = neigh.score(emb_finetune.detach().cpu().numpy(), label_finetune)
+        # print('KNN finetune acc:', knn_acc_train)
+        # # test the downstream classifier
+        # representation_test = emb_test.detach().cpu().numpy()
+        # knn_result = neigh.predict(representation_test)
+        # knn_result_score = neigh.predict_proba(representation_test)
+        # one_hot_label_test = one_hot_encoding(label_test)
+        # print(classification_report(label_test, knn_result, digits=4))
+        # print(confusion_matrix(label_test, knn_result))
+        # knn_acc = accuracy_score(label_test, knn_result)
+        # precision = precision_score(label_test, knn_result, average='macro', )
+        # recall = recall_score(label_test, knn_result, average='macro', )
+        # F1 = f1_score(label_test, knn_result, average='macro')
+        # auc = roc_auc_score(knn_result_score, one_hot_label_test, average="macro", multi_class="ovr")
+        # prc = average_precision_score(knn_result_score, one_hot_label_test, average="macro")
+        # print("KNN Train Acc:{}. '\n' Test: acc {}, precision {}, Recall {}, F1 {}, AUROC {}, AUPRC {}"
+        #       "".format(knn_acc_train, knn_acc, precision, recall, F1, auc, prc))
 
     logger.debug("\n################## Training is Done! #########################")
 
