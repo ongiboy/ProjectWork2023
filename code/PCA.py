@@ -12,12 +12,13 @@ def PCA_embeddings(embeddings): # input numpy arrays, shape (x,2)
 if __name__ == "__main__":
     modes = ["pretraining", "finetuning"]
     mode = modes[1]
-    array_number = ""
+    array_number = "9868"
+    plot = ""
 
     #labels only needed if mode == finetune
-    z_t = np.load(f"code/PCA_embeddings/{mode}/{array_number}_z_t.npy")
+    z_t = np.load("code/PCA_embeddings/{}/{}_{}z_t.npy".format(mode,array_number,plot))
     #z_t_aug = np.load(f"code/PCA_embeddings/{mode}/z_t_aug.npy")
-    z_f = np.load(f"code/PCA_embeddings/{mode}/{array_number}_z_f.npy")
+    z_f = np.load("code/PCA_embeddings/{}/{}_{}z_f.npy".format(mode,array_number,plot))
     #z_f_aug = np.load(f"code/PCA_embeddings/{mode}/z_f_aug.npy")
 
     embeddings = np.vstack((z_t, z_f))  # z_t_aug z_f_aug
@@ -25,7 +26,7 @@ if __name__ == "__main__":
 
     plt.figure(figsize=(8, 6))
     if mode == "finetuning":
-        labels = list(np.load(f"code/PCA_embeddings/{mode}/{array_number}_labels.npy")) * 2
+        labels = list(np.load("code/PCA_embeddings/{}/{}_{}labels.npy".format(mode,array_number,plot))) * 2
         unique_labels = np.unique(labels)
         for label in unique_labels:
             mask = labels == label
