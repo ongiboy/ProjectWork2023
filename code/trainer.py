@@ -257,7 +257,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         l_1, l_2, l_3 = nt_xent_criterion(z_t, z_f_aug), nt_xent_criterion(z_t_aug, z_f), nt_xent_criterion(z_t_aug, z_f_aug)
         loss_c = (1+ l_TF -l_1) + (1+ l_TF -l_2) + (1+ l_TF -l_3)
 
-        lam = 0.5
+        lam = 0.2
         loss = lam*(loss_t + loss_f) + (1-lam)*loss_c
 
         loss.backward()
@@ -274,8 +274,12 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     idx = random.sample(range(0, len(loss_loader.dataset.x_data)), 128)
     data_val = loss_loader.dataset.x_data[idx]
     data_f_val = loss_loader.dataset.x_data_f[idx]
-    aug1_val = loss_loader.dataset.aug1[idx].float()
+    aug1_val = loss_loader.dataset.aug1[idx]
     aug1_f_val = loss_loader.dataset.aug1_f[idx]
+
+    data_val = data_val.float().to(device) # data: [128, 1, 178]
+    aug1_val = aug1_val.float().to(device)  # aug1 = aug2 : [128, 1, 178]
+    data_f_val, aug1_f_val = data_f_val.float().to(device), aug1_f_val.float().to(device)  # aug1 = aug2 : [128, 1, 178]
 
     model.eval()
     h_t_val, z_t_val, h_f_val, z_f_val=model(data_val, data_f_val)
@@ -427,7 +431,7 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
         fea_concat_flat = fea_concat.reshape(fea_concat.shape[0], -1)
         loss_p = criterion(predictions, labels) # predictor loss, actually, here is training loss
 
-        lam = 0.5
+        lam = 0.2
         loss =  loss_p + (1-lam)*loss_c + lam*(loss_t + loss_f)
 
         acc_bs = labels.eq(predictions.detach().argmax(dim=1)).float().mean()
