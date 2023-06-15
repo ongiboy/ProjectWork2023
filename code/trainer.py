@@ -23,7 +23,7 @@ def one_hot_encoding(X):
     b = np.eye(n_values)[X]
     return b
 
-def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, train_dl, valid_dl, test_dl, device,
+def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, train_dl, loss_dl, valid_dl, test_dl, device,
             logger, config, experiment_log_dir, training_mode, model_F=None, model_F_optimizer=None,
             classifier=None, classifier_optimizer=None):
     # Start training
@@ -42,6 +42,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         pretrain_loss_f = []
         pretrain_loss_c = []
         pretrain_loss_TF = []
+        pretrain_loss_val = []
 
         for epoch in range(1, config.num_epoch + 1):
             # Train and validate
@@ -49,8 +50,8 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             if epoch == config.num_epoch:
                 get_embeds = True
                 print("We now want embeddings")
-            train_loss, train_acc, train_auc, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
-                                                              train_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
+            train_loss, train_acc, train_auc, loss_val, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
+                                                              train_dl, loss_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
 
             # Plots
             pretrain_loss_list.append(train_loss.item())
@@ -58,6 +59,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             pretrain_loss_f.append(train_loss_f.item())
             pretrain_loss_c.append(train_loss_c.item())
             pretrain_loss_TF.append(train_loss_TF.item())
+            pretrain_loss_val.append(loss_val)
 
             if training_mode != 'self_supervised':  # use scheduler in all other modes.
                 scheduler.step(train_loss)
@@ -84,6 +86,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         logger.debug('loss_f= %s', pretrain_loss_f)
         logger.debug('loss_c= %s', pretrain_loss_c)
         logger.debug('loss_TF= %s', pretrain_loss_TF)
+        logger.debug('loss_val= %s', pretrain_loss_val)
 
         os.makedirs(os.path.join(experiment_log_dir, "saved_models"), exist_ok=True) # only save in self_supervised mode.
         chkpoint = {'model_state_dict': model.state_dict(),}
@@ -176,32 +179,11 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         logger.debug("Test_Losses= %s", test_loss_list)
         logger.debug("##################################################################################")
 
-        # # train classifier: KNN
-        # neigh = KNeighborsClassifier(n_neighbors=1)
-        # neigh.fit(emb_finetune.detach().cpu().numpy(), label_finetune)
-        # knn_acc_train = neigh.score(emb_finetune.detach().cpu().numpy(), label_finetune)
-        # print('KNN finetune acc:', knn_acc_train)
-        # # test the downstream classifier
-        # representation_test = emb_test.detach().cpu().numpy()
-        # knn_result = neigh.predict(representation_test)
-        # knn_result_score = neigh.predict_proba(representation_test)
-        # one_hot_label_test = one_hot_encoding(label_test)
-        # print(classification_report(label_test, knn_result, digits=4))
-        # print(confusion_matrix(label_test, knn_result))
-        # knn_acc = accuracy_score(label_test, knn_result)
-        # precision = precision_score(label_test, knn_result, average='macro', )
-        # recall = recall_score(label_test, knn_result, average='macro', )
-        # F1 = f1_score(label_test, knn_result, average='macro')
-        # auc = roc_auc_score(knn_result_score, one_hot_label_test, average="macro", multi_class="ovr")
-        # prc = average_precision_score(knn_result_score, one_hot_label_test, average="macro")
-        # print("KNN Train Acc:{}. '\n' Test: acc {}, precision {}, Recall {}, F1 {}, AUROC {}, AUPRC {}"
-        #       "".format(knn_acc_train, knn_acc, precision, recall, F1, auc, prc))
-
     logger.debug("\n################## Training is Done! #########################")
 
 
 
-def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion, train_loader, config,
+def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion, train_loader, loss_loader, config,
                    device, training_mode, model_F=None, model_F_optimizer=None, get_embeds=False):
     total_loss = []
     total_acc = []
@@ -255,19 +237,6 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         lam = 0.5
         loss = lam*(loss_t + loss_f) + (1-lam)*loss_c
 
-        # Eval on validation set
-        model.eval()
-        h_t_val, z_t_val, h_f_val, z_f_val=model(data_val, data_f_val)
-        h_t_aug_val, z_t_aug_val, h_f_aug_val, z_f_aug_val=model(aug1_val, aug1_f_val)
-        loss_t_val = nt_xent_criterion(h_t_val, h_t_aug_val)
-        loss_f_val = nt_xent_criterion(h_f_val, h_f_aug_val)
-        l_TF_val = nt_xent_criterion(z_t_val, z_f_val)
-        l_1_val, l_2_val, l_3_val = nt_xent_criterion(z_t_val, z_f_aug_val), nt_xent_criterion(z_t_aug_val, z_f_val), nt_xent_criterion(z_t_aug_val, z_f_aug_val)
-        loss_c_val = (1+ l_TF_val -l_1_val) + (1+ l_TF_val -l_2_val) + (1+ l_TF_val -l_3_val)
-        loss_val = lam*(loss_t_val + loss_f_val) + (1-lam)*loss_c_val
-        model.train()
-
-
         loss.backward()
         model_optimizer.step()
 
@@ -278,8 +247,24 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         total_loss_c.append(loss_c.item())
         total_loss.append(loss.item())
 
+    # Eval on validation set (randomly select 60 samples)
+    idx = random.sample(range(0, len(loss_loader.dataset.x_data)), 128)
+    data_val = loss_loader.dataset.x_data[idx]
+    data_f_val = loss_loader.dataset.x_data_f[idx]
+    aug1_val = loss_loader.dataset.aug1[idx].float()
+    aug1_f_val = loss_loader.dataset.aug1_f[idx]
 
+    model.eval()
+    h_t_val, z_t_val, h_f_val, z_f_val=model(data_val, data_f_val)
+    h_t_aug_val, z_t_aug_val, h_f_aug_val, z_f_aug_val=model(aug1_val, aug1_f_val)
+    loss_t_val = nt_xent_criterion(h_t_val, h_t_aug_val)
+    loss_f_val = nt_xent_criterion(h_f_val, h_f_aug_val)
+    l_TF_val = nt_xent_criterion(z_t_val, z_f_val)
+    l_1_val, l_2_val, l_3_val = nt_xent_criterion(z_t_val, z_f_aug_val), nt_xent_criterion(z_t_aug_val, z_f_val), nt_xent_criterion(z_t_aug_val, z_f_aug_val)
+    loss_c_val = (1+ l_TF_val -l_1_val) + (1+ l_TF_val -l_2_val) + (1+ l_TF_val -l_3_val)
+    loss_val = lam*(loss_t_val + loss_f_val) + (1-lam)*loss_c_val
     
+
     # Plots (for last batch only)
     # Create embeddings
     model.eval()
@@ -300,8 +285,6 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
             z_f_list.append(z_f)
             z_f_aug_list.append(z_f_aug)
 
-
-
     print('preptraining: overall loss:{}, l_t: {}, l_f:{}, l_c:{}'.format(loss,loss_t,loss_f, loss_c))
 
     total_loss = torch.tensor(total_loss).mean()
@@ -317,7 +300,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     else:
         total_acc = torch.tensor(total_acc).mean()
         total_auc = torch.tensor(total_auc).mean()
-    return total_loss, total_acc, total_auc, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF), (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list)
+    return total_loss, total_acc, total_auc, loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF), (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list)
 
 
 def model_finetune(model, temporal_contr_model, val_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
