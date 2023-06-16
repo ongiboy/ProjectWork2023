@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 def PCA_embeddings(embeddings): # input numpy arrays, shape (x,2)
     #n_components is number of PC's
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=5)
     pca.fit(embeddings)
     embeddings_pca = pca.transform(embeddings)
     return embeddings_pca
@@ -13,6 +13,7 @@ if __name__ == "__main__":
     modes = ["pretraining", "finetuning"]
     mode = modes[1]
     array_number = "2365" # Insert embed ID here
+    PC = [0,1]
     
     name_test = ["training", "test"]
     name_plot = ["before", "after"]

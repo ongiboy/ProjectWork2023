@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from sklearn.metrics import roc_auc_score, classification_report, confusion_matrix, \
     average_precision_score, accuracy_score, precision_score,f1_score,recall_score
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
 
 from loss import * #NTXentLoss, NTXentLoss_poly
 from PCA import PCA_embeddings
@@ -103,11 +104,15 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         performance_list = []
         total_f1 = []
 
+        # Logistic regression classifier
+        Clf_log = LogisticRegression(multi_class="multinomial")
+
         # Plots
         finetune_loss_list = []
         finetune_acc_list = []
         test_loss_list = []
         test_acc_list = []
+        clf_log_perf_list = []
 
         get_embeds = 1 # 0=No embeds, 1=Embeds_before, 2=Embeds_after
         embed_name = str(random.random())[2:6] # give embed files random name so it doesnt get overwritten
@@ -119,7 +124,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                 print("We now want embeddings")
             valid_loss, valid_acc, valid_auc, valid_prc, emb_finetune, label_finetune, F1, (z_t, z_t_aug, z_f, z_f_aug, pred_list), (z_t_test, z_t_aug_test, z_f_test, z_f_aug_test, labels_test) = model_finetune(model, temporal_contr_model, valid_dl, test_dl, config, device, training_mode,
                                                    model_optimizer, model_F=model_F, model_F_optimizer=model_F_optimizer,
-                                                        classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=get_embeds)
+                                                        classifier=classifier, classifier_optimizer=classifier_optimizer, get_embeds=get_embeds, clf2=Clf_log)
             if epoch == 1:#and get_embeds==1: # Embeds before fine tuning
                 get_embeds = 0 # stop returning embeds
 
@@ -180,9 +185,9 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             logger.debug('\nTest on Target datasts test set')
             # model.load_state_dict(torch.load('experiments_logs/finetunemodel/' + arch + '_model.pt'))
             # classifier.load_state_dict(torch.load('experiments_logs/finetunemodel/' + arch + '_classifier.pt'))
-            test_loss, test_acc, test_auc, test_prc, emb_test, label_test, performance = model_test(model, temporal_contr_model, test_dl, config, device, training_mode,
+            test_loss, test_acc, test_auc, test_prc, emb_test, label_test, performance, clf_log_perf = model_test(model, temporal_contr_model, test_dl, config, device, training_mode,
                                                                 model_F=model_F, model_F_optimizer=model_F_optimizer,
-                                                             classifier=classifier, classifier_optimizer=classifier_optimizer)
+                                                             classifier=classifier, classifier_optimizer=classifier_optimizer, clf2=Clf_log)
 
             performance_list.append(performance)
 
@@ -190,7 +195,8 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             finetune_loss_list.append(valid_loss.item())
             finetune_acc_list.append(valid_acc.item())
             test_loss_list.append(test_loss.item())
-            test_acc_list.append(test_acc.item())      
+            test_acc_list.append(test_acc.item())
+            clf_log_perf_list.append(clf_log_perf)
 
         performance_array = np.array(performance_list)
         best_performance = performance_array[np.argmax(performance_array[:,0], axis=0)]
@@ -203,6 +209,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         logger.debug("Finetune_Losses= %s", finetune_loss_list)
         logger.debug("Test_Accuracies= %s", test_acc_list)
         logger.debug("Test_Losses= %s", test_loss_list)
+        logger.debug("LogRegr_perf=%s", clf_log_perf_list)
         logger.debug("##################################################################################")
 
     logger.debug("\n################## Training is Done! #########################")
@@ -338,7 +345,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     
 
 def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
-                   classifier=None, classifier_optimizer=None, get_embeds=0):
+                   classifier=None, classifier_optimizer=None, get_embeds=0, clf2=None):
     
 
     total_loss = []
@@ -436,11 +443,13 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
         fea_concat = torch.cat((z_t, z_f), dim=1)
         predictions = classifier(fea_concat) # how to define classifier? MLP? CNN?
         fea_concat_flat = fea_concat.reshape(fea_concat.shape[0], -1)
-        loss_p = criterion(predictions, labels) # predictor loss, actually, here is training loss
 
+        # Log regr classifier
+        clf2.fit(fea_concat.detach().numpy(), labels.detach().numpy())
+
+        loss_p = criterion(predictions, labels) # predictor loss, actually, here is training loss
         lam = 0.2
         loss =  loss_p + (1-lam)*loss_c + lam*(loss_t + loss_f)
-
         acc_bs = labels.eq(predictions.detach().argmax(dim=1)).float().mean()
         onehot_label = F.one_hot(labels)
         pred_numpy = predictions.detach().cpu().numpy()
@@ -521,7 +530,7 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
     return total_loss, total_acc, total_auc, total_prc, fea_concat_flat, trgs, F1, (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list, pred_list), (z_t_list_test, z_t_aug_list_test, z_f_list_test, z_f_aug_list_test, labels_list_test)
 
 def model_test(model, temporal_contr_model, test_dl,config,  device, training_mode, model_F=None, model_F_optimizer=None,
-               classifier=None, classifier_optimizer=None):
+               classifier=None, classifier_optimizer=None, clf2=None):
     model.eval()
     classifier.eval()
 
@@ -536,8 +545,11 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
     trgs = np.array([])
     emb_test_all = []
 
+
+
     with torch.no_grad():
         labels_numpy_all, pred_numpy_all = np.zeros(1), np.zeros(1)
+        log_preds_all = np.zeros(1)
         for data, labels, _,data_f, _ in test_dl:
             # print('TEST: {} of target samples'.format(labels.shape[0]))
             data, labels = data.float().to(device), labels.long().to(device)
@@ -550,6 +562,9 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
             predictions_test = classifier(fea_concat)  # how to define classifier? MLP? CNN?
             fea_concat_flat = fea_concat.reshape(fea_concat.shape[0], -1)
             emb_test_all.append(fea_concat_flat)
+
+            # Log regr classifier
+            log_preds = clf2.predict(fea_concat.detach().numpy())
 
             if training_mode != "pre_train":
                 loss = criterion(predictions_test, labels)
@@ -585,11 +600,14 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
                 trgs = np.append(trgs, labels.data.cpu().numpy())
             labels_numpy_all = np.concatenate((labels_numpy_all, labels_numpy))
             pred_numpy_all = np.concatenate((pred_numpy_all, pred_numpy))
+            log_preds_all = np.concatenate((log_preds_all, log_preds))
     labels_numpy_all = labels_numpy_all[1:]
     pred_numpy_all = pred_numpy_all[1:]
+    log_preds_all = log_preds_all[1:]
 
     # print('Test classification report', classification_report(labels_numpy_all, pred_numpy_all))
-    # print(confusion_matrix(labels_numpy_all, pred_numpy_all))
+    print("cm_mlp: ",confusion_matrix(labels_numpy_all, pred_numpy_all))
+    print("cm_log: ",confusion_matrix(labels_numpy_all, log_preds_all))
     precision = precision_score(labels_numpy_all, pred_numpy_all, average='macro', )
     recall = recall_score(labels_numpy_all, pred_numpy_all, average='macro', )
     F1 = f1_score(labels_numpy_all, pred_numpy_all, average='macro', )
@@ -600,6 +618,10 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
     total_auc = torch.tensor(total_auc).mean()
     total_prc = torch.tensor(total_prc).mean()
 
+    # log performance
+    log_perf = accuracy_score(labels_numpy_all, log_preds_all)
+    print("log_reg_acc: ", log_perf)
+
     # precision_mean = torch.tensor(total_precision).mean()
     # recal_mean = torch.tensor(total_recall).mean()
     # f1_mean = torch.tensor(total_f1).mean()
@@ -608,4 +630,4 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
           % (acc*100, precision * 100, recall * 100, F1 * 100, total_auc*100, total_prc*100))
 
     emb_test_all = torch.concat(tuple(emb_test_all))
-    return total_loss, total_acc, total_auc, total_prc, emb_test_all, trgs, performance
+    return total_loss, total_acc, total_auc, total_prc, emb_test_all, trgs, performance, log_perf
