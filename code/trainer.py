@@ -126,7 +126,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                 # Fine tune embeds
                 logger.debug("\n Saved PCA embeddings and labels from before finetune for finetune data")
                 np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_labels", label_finetune)
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_preds", pred_list)
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_preds", pred_list[0])
                 np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_z_t", z_t[0].detach().cpu().numpy())
                 np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_z_t_aug", z_t_aug[0].detach().cpu().numpy())
                 np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_z_f", z_f[0].detach().cpu().numpy())
@@ -134,11 +134,11 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                 
                 # Test embeds
                 logger.debug("\n Saved PCA embeddings and labels from before finetune for test data")
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_labels", labels_test[0].detach().cpu().numpy())
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_t", z_t_test[0].detach().cpu().numpy())
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_t_aug", z_t_aug_test[0].detach().cpu().numpy())
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_f", z_f_test[0].detach().cpu().numpy())
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_f_aug", z_f_aug_test[0].detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_labels", torch.cat(labels_test).detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_t", torch.cat(z_t_test).detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_t_aug", torch.cat(z_t_aug_test).detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_f", torch.cat(z_f_test).detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_bef_test_z_f_aug", torch.cat(z_f_aug_test).detach().cpu().numpy())
             
             if epoch == config.num_epoch:#and get_embeds==2: # Embeds after finetune
                 # Fine tune embeds
@@ -152,11 +152,11 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                 
                 # Test embeds
                 logger.debug("\n Saved PCA embeddings and labels from after finetune for test data")
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_labels", labels_test[0].detach().cpu().numpy())
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_z_t", z_t_test[0].detach().cpu().numpy())
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_z_t_aug", z_t_aug_test[0].detach().cpu().numpy())
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_z_f", z_f_test[0].detach().cpu().numpy())
-                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_z_f_aug", z_f_aug_test[0].detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_labels", torch.cat(labels_test).detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_z_t", torch.cat(z_t_test).detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_z_t_aug", torch.cat(z_t_aug_test).detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_z_f", torch.cat(z_f_test).detach().cpu().numpy())
+                np.save(f"code/PCA_embeddings/finetuning/{embed_name}_aft_test_z_f_aug", torch.cat(z_f_aug_test).detach().cpu().numpy())
 
             if training_mode != 'pre_train':  # use scheduler in all other modes.
                 scheduler.step(valid_loss)
@@ -468,7 +468,8 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
             aug1_list.append(aug1)
             aug1_f_list.append(aug1_f)
             #labels_list.append(labels)
-            pred_list.append(np.argmax(pred_numpy, axis=1))
+
+        pred_list.append(np.argmax(pred_numpy, axis=1))
 
     # Plots (for last batch only)
     # Create embeddings

@@ -12,7 +12,7 @@ def PCA_embeddings(embeddings): # input numpy arrays, shape (x,2)
 if __name__ == "__main__":
     modes = ["pretraining", "finetuning"]
     mode = modes[1]
-    array_number = "2365" # Insert embed ID here
+    array_number = "1019" # Insert embed ID here
     
     name_test = ["training", "test"]
     name_plot = ["before", "after"]
@@ -27,21 +27,21 @@ if __name__ == "__main__":
             z_f = np.load("code/PCA_embeddings/{}/{}_{}{}_z_f.npy".format(mode,array_number,plot,test))
             #z_f_aug = np.load(f"code/PCA_embeddings/{mode}/z_f_aug.npy")
             
-            embeddings = np.vstack((z_t, z_f))  # z_t_aug z_f_aug
+            embeddings = np.hstack((z_t, z_f))  # z_t_aug z_f_aug
             embeddings_pca = PCA_embeddings(embeddings)
 
             if mode == "finetuning":
-                labels = list(np.load("code/PCA_embeddings/{}/{}_{}{}_labels.npy".format(mode,array_number,plot,test))) * 2
+                labels = list(np.load("code/PCA_embeddings/{}/{}_{}{}_labels.npy".format(mode,array_number,plot,test)))
                 unique_labels = np.unique(labels)
                 for label in unique_labels:
                     mask = labels == label
                     # class coloring
-                    axs[p,t].scatter(embeddings_pca[mask, 0], embeddings_pca[mask, 1], label=label)
+                    axs[p,t].scatter(embeddings_pca[mask, 0], embeddings_pca[mask, 1], label=label, s=15)
 
             # elif mode == "pretraining":
             #     plt.scatter(embeddings_pca[:, 0], embeddings_pca[:, 1])
 
-            axs[p,t].set_title("{} pint embeddings {} finetuning".format(name_test[t], name_plot[p]))
+            axs[p,t].set_title("{} point embeddings {} finetuning".format(name_test[t], name_plot[p]))
     for ax in axs.flat:
         ax.set(xlabel='PC1', ylabel='PC2')
     plt.legend()
