@@ -30,22 +30,43 @@ def DataTransform_TD(sample, config, enable_new_augs=False):
     if enable_new_augs and config.aug_new != "":
         print("New augmentations in use")
         if config.aug_new == "Depr": # TD augments for depression fine-tuning
-            aug_0 = masking(sample.copy())
-            aug_1 = jitter(sample.copy(), config.augmentation.jitter_ratio)
-            aug_2 = scaling(sample.copy(), config.augmentation.jitter_scale_ratio)
-            aug_3 = spike(sample.copy(), num_spikes=len(sample)//50, max_spike=2)
+            aug_0 = masking(sample.clone())
+            aug_1 = jitter(sample.clone(), config.augmentation.jitter_ratio)
+            aug_2 = scaling(sample.clone(), config.augmentation.jitter_scale_ratio)
+            aug_3 = spike(sample.clone(), num_spikes=len(sample)//50, max_spike=2)
+
+            li = np.random.randint(0, 4, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+            li_onehot = one_hot_encoding(li) == 1
+            aug_0[~li_onehot[:, 0]] = 0
+            aug_1[~li_onehot[:, 1]] = 0 # the rows are not selected (false) are set to zero.
+            aug_2[~li_onehot[:, 2]] = 0
+            aug_3[~li_onehot[:, 3]] = 0
+            
             aug_T = aug_0 + aug_1 + aug_2 + aug_3
+
         elif config.aug_new == "Exo": # TD augments for Exoplanet finetuning
-            aug_0 = masking(sample.copy())
-            aug_1 = jitter(sample.copy(), config.augmentation.jitter_ratio)
-            aug_2 = scaling(sample.copy(), config.augmentation.jitter_scale_ratio)
-            aug_3 = reverse(sample.copy())
-            aug_4 = flip(sample.copy())
-            aug_5 = spike(sample.copy(), num_spikes=len(sample)//50, max_spike=2)
-            aug_6 = slope_trend(sample.copy(), max_stds=1)
-            aug_7 = step_trend(sample.copy(), num_steps=len(sample)//50, max_step=0.5)
+            aug_0 = masking(sample.clone())
+            aug_1 = jitter(sample.clone(), config.augmentation.jitter_ratio)
+            aug_2 = scaling(sample.clone(), config.augmentation.jitter_scale_ratio)
+            aug_3 = reverse(sample.clone())
+            aug_4 = flip(sample.clone())
+            aug_5 = spike(sample.clone(), num_spikes=len(sample)//50, max_spike=2)
+            aug_6 = slope_trend(sample.clone(), max_stds=1)
+            aug_7 = step_trend(sample.clone(), num_steps=len(sample)//50, max_step=0.5)
+
+            li = np.random.randint(0, 8, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+            li_onehot = one_hot_encoding(li) == 1
+            aug_0[~li_onehot[:, 0]] = 0
+            aug_1[~li_onehot[:, 1]] = 0 # the rows are not selected (false) are set to zero.
+            aug_2[~li_onehot[:, 2]] = 0
+            aug_3[~li_onehot[:, 3]] = 0
+            aug_4[~li_onehot[:, 4]] = 0
+            aug_5[~li_onehot[:, 5]] = 0 # the rows are not selected (false) are set to zero.
+            aug_6[~li_onehot[:, 6]] = 0
+            aug_7[~li_onehot[:, 7]] = 0
+
             aug_T = aug_0 + aug_1 + aug_2 + aug_3 + aug_4 + aug_5 + aug_6 + aug_7
-    
+
     else:
         print("Article augmentation in use")
         aug_1 = jitter(sample, config.augmentation.jitter_ratio)
@@ -67,10 +88,20 @@ def DataTransform_FD(sample, config, enable_new_augs=False):
     if enable_new_augs and config.aug_new != "":
         print("New augmentations in use")
         if config.aug_new == "Depr": # reverse, noise injection,
-            pass
+            aug_0 = noise_replace(sample.clone(), ratio=0.05)
+            aug_1 = scale(sample.clone())
+            
         elif config.aug_new == "Exo": # flip, noise injection,
-            pass
-    
+            aug_0 = noise_replace(sample.clone(), ratio=0.05)
+            aug_1 = scale(sample.clone())
+
+        # generate random sequence
+        li = np.random.randint(0, 2, size=[sample.shape[0]]) # there are two augmentations in Frequency domain
+        li_onehot = one_hot_encoding(li) == 1
+        aug_0[~li_onehot[:, 0]] = 0 # the rows are not selected (false) are set to zero.
+        aug_1[~li_onehot[:, 1]] = 0
+        aug_F = aug_0 + aug_1
+
     else:
         """Weak and strong augmentations in Frequency domain """
         aug_1 =  remove_frequency(sample, 0.1)
@@ -234,7 +265,7 @@ def step_trend(x, num_steps, max_step=1):
 def noise_replace(x, ratio=0.05):
     """ Replaces random frequencies with random (uniform) values """
     # uniform random tensor - max values equal to max value of the corresponding row in x
-    max_values, _ = torch.max(x, dim=1)
+    max_values, _ = torch.max(x, dim=2)
     max_tensor = max_values.unsqueeze(1).expand_as(x) 
     tensor_uniform = torch.rand_like(x) * max_tensor
 
