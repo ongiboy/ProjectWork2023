@@ -12,7 +12,7 @@ def PCA_embeddings(embeddings): # input numpy arrays, shape (x,2)
 if __name__ == "__main__":
     modes = ["pretraining", "finetuning"]
     mode = modes[1]
-    array_number = "2365" # Insert embed ID here
+    array_number = "6127" # Insert embed ID here
     PC = [0,1]
     
     name_test = ["training", "test"]
@@ -44,6 +44,6 @@ if __name__ == "__main__":
 
             axs[p,t].set_title("{} point embeddings {} finetuning".format(name_test[t], name_plot[p]))
     for ax in axs.flat:
-        ax.set(xlabel='PC1', ylabel='PC2')
+        ax.set(xlabel='PC{}'.format(PC[0]), ylabel='PC{}'.format(PC[1]))
     plt.legend()
     plt.show()
