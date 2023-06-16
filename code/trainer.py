@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from sklearn.metrics import roc_auc_score, classification_report, confusion_matrix, \
-    average_precision_score, accuracy_score, precision_score,f1_score,recall_score
+    average_precision_score, accuracy_score, precision_score,f1_score,recall_score, balanced_accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
 
@@ -445,7 +445,7 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
         fea_concat_flat = fea_concat.reshape(fea_concat.shape[0], -1)
 
         # Log regr classifier
-        clf2.fit(fea_concat.detach().numpy(), labels.detach().numpy())
+        clf2.fit(fea_concat.detach().cpu().numpy(), labels.detach().cpu().numpy())
 
         loss_p = criterion(predictions, labels) # predictor loss, actually, here is training loss
         lam = 0.2
@@ -565,7 +565,7 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
             emb_test_all.append(fea_concat_flat)
 
             # Log regr classifier
-            log_preds = clf2.predict(fea_concat.detach().numpy())
+            log_preds = clf2.predict(fea_concat.detach().cpu().numpy())
 
             if training_mode != "pre_train":
                 loss = criterion(predictions_test, labels)
@@ -607,12 +607,12 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
     log_preds_all = log_preds_all[1:]
 
     # print('Test classification report', classification_report(labels_numpy_all, pred_numpy_all))
-    print("cm_mlp: ",confusion_matrix(labels_numpy_all, pred_numpy_all))
-    print("cm_log: ",confusion_matrix(labels_numpy_all, log_preds_all))
+    print("cm_mlp:\n",confusion_matrix(labels_numpy_all, pred_numpy_all))
+    print("cm_log:\n",confusion_matrix(labels_numpy_all, log_preds_all))
     precision = precision_score(labels_numpy_all, pred_numpy_all, average='macro', )
     recall = recall_score(labels_numpy_all, pred_numpy_all, average='macro', )
     F1 = f1_score(labels_numpy_all, pred_numpy_all, average='macro', )
-    acc = accuracy_score(labels_numpy_all, pred_numpy_all, )
+    acc = balanced_accuracy_score(labels_numpy_all, pred_numpy_all, )
 
     total_loss = torch.tensor(total_loss).mean()
     total_acc = torch.tensor(total_acc).mean()
@@ -620,7 +620,7 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
     total_prc = torch.tensor(total_prc).mean()
 
     # log performance
-    log_perf = accuracy_score(labels_numpy_all, log_preds_all)
+    log_perf = balanced_accuracy_score(labels_numpy_all, log_preds_all)
     print("log_reg_acc: ", log_perf)
 
     # precision_mean = torch.tensor(total_precision).mean()
@@ -631,4 +631,4 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
           % (acc*100, precision * 100, recall * 100, F1 * 100, total_auc*100, total_prc*100))
 
     emb_test_all = torch.concat(tuple(emb_test_all))
-    return total_loss, total_acc, total_auc, total_prc, emb_test_all, trgs, performance, log_perf
+    return total_loss, acc, total_auc, total_prc, emb_test_all, trgs, performance, log_perf
