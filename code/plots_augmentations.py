@@ -11,10 +11,10 @@ x0_f = fft.fft(x0).abs()
 
 x_reverse = reverse(x0)
 x_flip = flip(x0)
-x_spike = spike(x0, num_spikes=x0.shape[2]/10)
-x_slope = slope_trend(x0, max_stds=2)
-x_step = step_trend(x0, num_steps=2, max_step=x0.shape[2]/20)
-x_noise = noise_replace(x0_f,0.2)
+x_spike = spike(x0, num_spikes= 8, max_spike=4)
+x_slope = slope_trend(x0, max_stds=3)
+x_step = step_trend(x0, num_steps=6, max_step=5)
+x_noise = noise_replace(x0_f, 0.2)
 x_scale = scale(x0_f)
 
 # FREQUENCY DOMAIN OWN AUGMENTATION PLOTS_______________________________________________________________________________
@@ -52,7 +52,7 @@ num_plots = len(transformations)
 fig, axs = plt.subplots(num_plots, 1)
 
 for i in range(num_plots):
-    axs[i].plot(transformations[i][0][0], linewidth=1)
+    axs[i].plot(transformations[i][0][0], linewidth=2)
     axs[i].set_title(titles[i])
 
 fig.tight_layout()
