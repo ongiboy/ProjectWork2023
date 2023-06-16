@@ -69,10 +69,10 @@ train_data_dict = {"samples": train_samples_tensor, "labels": train_labels_tenso
 test_data_dict = {"samples": test_samples_tensor, "labels": test_labels_tensor}
 
 # Save Torch tensors as PT files in new created folders
-if not os.path.exists(f"datasets\\Exoplanets_FD-A"):
-    os.mkdir(f"datasets\\Exoplanets_FD-A")
-torch.save(train_data_dict, f'datasets\\Exoplanets_FD-A\\train.pt')
-torch.save(test_data_dict, f'datasets\\Exoplanets_FD-A\\test.pt')
+if not os.path.exists(f"datasets\\Exoplanets_FD_A"):
+    os.mkdir(f"datasets\\Exoplanets_FD_A")
+torch.save(train_data_dict, f'datasets\\Exoplanets_FD_A\\train.pt')
+torch.save(test_data_dict, f'datasets\\Exoplanets_FD_A\\test.pt')
 
 
 
