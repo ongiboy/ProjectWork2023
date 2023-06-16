@@ -163,33 +163,33 @@ def add_frequency(x, pertub_ratio=0,):
 
 # TD
 def reverse(x):
-    reversed_x = np.flip(x, axis=2)
-    return reversed_x
+    flipped_x = torch.flip(x, dims=(2,))
+    return flipped_x
 
 def flip(x):
     return -x
 
 def spike(x, num_spikes, max_spike=2):
     """adds random spikes at random index for each signal """
-    spiked_x = x.copy().astype('float64')
+    spiked_x = x.numpy().copy()
 
     # loop over each signal/row
     for i in range(spiked_x.shape[0]):
         signal = spiked_x[i, 0, :]  # 0 if only 1 channel !!!
         std = np.std(signal)
 
-        for _ in range(num_spikes):
+        for _ in range(int(num_spikes)):
             # random generate spikes and augment data
             index = np.random.randint(0, len(signal))
             direction = np.random.choice([-1, 1])
             spike_magnitude = np.random.uniform(0, max_spike) * std
 
             spiked_x[i, 0, index] += direction * spike_magnitude  # add spike to signal
-    return spiked_x
+    return torch.from_numpy(spiked_x)
 
 def slope_trend(x, max_stds=1):
     """adds a random slope to each signal"""
-    sloped_x = x.copy().astype('float64')
+    sloped_x = x.numpy().copy()
 
     # loop over each signal/row
     for i in range(sloped_x.shape[0]):
@@ -204,28 +204,31 @@ def slope_trend(x, max_stds=1):
         slope_array = np.array([j*slope for j in range(len(signal))])
 
         sloped_x[i, 0, :] += slope_array.astype('float64')
-    return sloped_x
+    return torch.from_numpy(sloped_x)
 
 def step_trend(x, num_steps, max_step=1):
     """Adds step-like trends to signals"""
-    stepped_x = x.copy().astype('float64')
+    stepped_x = x.numpy().copy()
 
     # loop over each signal/row
     for i in range(stepped_x.shape[0]):
         signal = stepped_x[i, 0, :]  # 0 if only 1 channel !!!
         std = np.std(signal)
 
-        for _ in range(num_steps):
-            # randomly generate left and right indices for the step
-            left_index = np.random.randint(0, len(signal))
-            right_index = np.random.randint(left_index, len(signal))
 
-            step_magnitude = np.random.uniform(0, max_step) * std
-            step_direction = np.sign(signal[right_index] - signal[left_index])
-            step_array = [step_direction * step_magnitude * (j//2) for j in range(right_index - left_index + 1)]
+        idxs = [np.random.randint(0, len(signal)+1) for _ in range(int(num_steps))]
+        idxs.sort()
+        points = [np.random.uniform(-max_step, max_step) * std for _ in range(int(num_steps))]
 
-            stepped_x[i, 0, left_index:right_index+1] += np.array(step_array).astype('float64')
-    return stepped_x
+        step_array = np.zeros(len(signal))
+        for i_step in range(int(num_steps)):
+            if idxs[i_step] == idxs[0]:
+                step_array[:idxs[i_step]+1] = points[i_step]
+            else:
+                step_array[idxs[i_step-1]:idxs[i_step]+1] = points[i_step]
+
+        stepped_x[i, 0, :] += step_array
+    return torch.from_numpy(stepped_x)
 
 # FD
 def noise_replace(x, ratio=0.05):
@@ -235,7 +238,7 @@ def noise_replace(x, ratio=0.05):
     max_tensor = max_values.unsqueeze(1).expand_as(x) 
     tensor_uniform = torch.rand_like(x) * max_tensor
 
-    mask = torch.cuda.FloatTensor(x.shape).uniform_() > ratio # choose "ratio" amount of points
+    mask = torch.FloatTensor(x.shape).uniform_() > ratio # choose "ratio" amount of points
     mask = mask.to(x.device)
     x_muted = x*mask # removes certain points
     return x_muted + ~mask * tensor_uniform # the points removed are replaced by noise
