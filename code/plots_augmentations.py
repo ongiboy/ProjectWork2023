@@ -4,6 +4,7 @@ import numpy as np
 import math
 from augmentations import *
 import torch.fft as fft
+#remove .cuda in augmentations to plot !!!
 
 sleep_data = torch.load('datasets\\SleepEEG\\train.pt')
 x0 = sleep_data['samples'][:100]
@@ -14,7 +15,7 @@ x_flip = flip(x0)
 x_spike = spike(x0, num_spikes= 8, max_spike=4)
 x_slope = slope_trend(x0, max_stds=3)
 x_step = step_trend(x0, num_steps=6, max_step=5)
-x_noise = noise_replace(x0_f, 0.2)
+x_noise = noise_replace(x0_f, 0.1)
 x_scale = scale(x0_f)
 
 # FREQUENCY DOMAIN OWN AUGMENTATION PLOTS_______________________________________________________________________________
@@ -28,7 +29,7 @@ x_scale_np = x_scale.numpy()
 fig, axs = plt.subplots(3, 1, sharex=True)
 
 color = "darkslateblue"
-titles = ['Original FD', 'Noise Replace FD', 'Scale FD']
+titles = ['Original Signal (FD)', 'Noise Replace (FD)', 'Scale (FD)']
 
 for i, data in enumerate([(x0_f_np, color), (x_noise_np, color), (x_scale_np, color)]):
     markerline, stemlines, baseline = axs[i].stem(freq, data[0][0][0], bottom=0,
@@ -58,44 +59,65 @@ for i in range(num_plots):
 fig.tight_layout()
 plt.show()
 
-'''
+
 # ARTICLE AUGMENTATION PLOTS____________________________________________________________________________________________
 x_f = fft.fft(x0).abs()
 
-aug_add = add_frequency(x_f,0.2)
-aug_remove = remove_frequency(x_f,0.5)
+aug_add = add_frequency(x_f, 0.3)
+aug_remove = remove_frequency(x_f, 0.3)
 
 ## Using the jitter-augmentation
-aug_jit = jitter(x0,10)
+aug_jit = jitter(x0, 10)
 
 ## Using the scaling-augmentation
-aug_scaling = scaling(x0,2)
+aug_scaling = scaling(x0, 3)
 
 ## Using the permutation-augmentation
 #x_perm = torch.from_numpy(np.copy(x0))
-aug_perm = permutation(x0, 5)
+aug_perm = permutation(x0, 6)
 
 ## Using the masking-augmentation
 x_mask = torch.from_numpy(np.copy(x0))
-aug_mask = masking(x_mask, 0.4)
+aug_mask = masking(x_mask)
 
-jit_fig, ax = plt.subplots(8)
-ax[0].plot(x0[0][0], linewidth=2)
-ax[0].set_title("Original Signal (TD)")
-ax[1].plot(aug_perm[0][0], linewidth=2)
-ax[1].set_title("Permutation (TD)")
-ax[2].plot(aug_jit[0][0], linewidth=2)
-ax[2].set_title("Jittering (TD)")
-ax[3].plot(aug_scaling[0][0], linewidth=2)
-ax[3].set_title("Scaling (TD)")
-ax[4].plot(aug_mask[0][0], linewidth=2)
-ax[4].set_title("Masking (TD)")
-ax[5].plot(x_f[0][0], color = "darkslateblue", linewidth=2)
-ax[5].set_title("Original Signal (FD)")
-ax[6].plot(aug_add[0][0], color = "darkslateblue", linewidth=2)
-ax[6].set_title("Add frequency (FD)")
-ax[7].plot(aug_remove[0][0], color = "darkslateblue", linewidth=2)
-ax[7].set_title("Remove frequency (FD)")
-jit_fig.tight_layout()
+# OLD AUGMENTATIONS TD: original, perm, jitt, scaling, masking
+fig, axs = plt.subplots(5)
+
+axs[0].plot(x0[0][0], linewidth=2)
+axs[0].set_title("Original Signal (TD)")
+
+axs[1].plot(aug_perm[0][0], linewidth=2)
+axs[1].set_title("Permutation (TD)")
+
+axs[2].plot(aug_jit[0][0], linewidth=2)
+axs[2].set_title("Jittering (TD)")
+
+axs[3].plot(aug_scaling[0][0], linewidth=2)
+axs[3].set_title("Scaling (TD)")
+
+axs[4].plot(aug_mask[0][0], linewidth=2)
+axs[4].set_title("Masking (TD)")
+
+plt.tight_layout()
 plt.show()
-'''
+
+# OLD AUGMENTATIONS FD: original and add/remove freq
+fig, axs = plt.subplots(3, 1, sharex=True)
+
+color = "darkslateblue"
+titles = ['Original Signal (FD)', 'Add frequency (FD)', 'Remove frequency (FD)']
+
+freq = np.fft.fftfreq(x_f.shape[2])  # Frequency values for the frequency domain plots
+for i, data in enumerate([(x_f, color), (aug_add, color), (aug_remove, color)]):
+    markerline, stemlines, baseline = axs[i].stem(freq, data[0][0][0], bottom=0,
+                                                  linefmt='-', markerfmt='o', use_line_collection=True)
+    markerline.set_markersize(3)
+    markerline.set_color(data[1])
+    stemlines.set_color(data[1])
+    baseline.set_color("black")
+    baseline.set_linewidth(1)
+    axs[i].set_ylabel('Magnitude')
+    axs[i].set_title(titles[i])
+
+plt.xlabel('Frequency')
+plt.show()
