@@ -22,6 +22,13 @@ TSlength = 5120
 
 data, labels = remove_outliers(data, labels)
 
+# Calculate the mean and standard deviation along the desired axis (axis=2)
+mean = np.mean(data, axis=1, keepdims=True)
+std = np.std(data, axis=1, keepdims=True)
+
+# Subtract the mean and divide by the standard deviation
+data = (data - mean) / std
+
 
 pad_matrix = np.zeros((len(data), TSlength-len_obs))
 padded_data = np.hstack((data, pad_matrix))
