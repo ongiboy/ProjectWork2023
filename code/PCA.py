@@ -37,13 +37,13 @@ if __name__ == "__main__":
                 for label in unique_labels:
                     mask = labels == label
                     # class coloring
-                    axs[p,t].scatter(embeddings_pca[mask, 0], embeddings_pca[mask, 1], label=label, s=15)
+                    axs[p,t].scatter(embeddings_pca[mask, PC[0]], embeddings_pca[mask, PC[1]], label=label, s=15)
 
             # elif mode == "pretraining":
             #     plt.scatter(embeddings_pca[:, 0], embeddings_pca[:, 1])
 
             axs[p,t].set_title("{} point embeddings {} finetuning".format(name_test[t], name_plot[p]))
     for ax in axs.flat:
-        ax.set(xlabel='PC{}'.format(PC[0]), ylabel='PC{}'.format(PC[1]))
+        ax.set(xlabel='PC{}'.format(PC[0]+1), ylabel='PC{}'.format(PC[1]+1))
     plt.legend()
     plt.show()
