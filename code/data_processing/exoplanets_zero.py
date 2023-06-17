@@ -20,6 +20,8 @@ data = data[: , 1:]
 len_obs = len(data[0])
 TSlength = 5120
 
+data, labels = remove_outliers(data, labels)
+
 
 pad_matrix = np.zeros((len(data), TSlength-len_obs))
 padded_data = np.hstack((data, pad_matrix))
@@ -68,6 +70,8 @@ test_labels_tensor = torch.tensor(test_labels)
 train_data_dict = {"samples": train_samples_tensor, "labels": train_labels_tensor}
 test_data_dict = {"samples": test_samples_tensor, "labels": test_labels_tensor}
 
+print('Training size: ', train_samples_tensor.shape, train_labels_tensor.shape)
+print('Test size: ', test_samples_tensor.shape, test_labels_tensor.shape)
 # Save Torch tensors as PT files in new created folders
 if not os.path.exists(f"datasets\\Exoplanets_FD_A"):
     os.mkdir(f"datasets\\Exoplanets_FD_A")
