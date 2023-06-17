@@ -1,6 +1,6 @@
+from sklearn.model_selection import cross_val_score, cross_val_predict
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import balanced_accuracy_score
 import torch
 import numpy as np
 
@@ -31,12 +31,14 @@ test = torch.load(f'datasets\\{dataset}\\test.pt')
 x_test, y_test = np.squeeze(test["samples"]), test["labels"]
 
 # KNN
-n_neighbors = [1,2,3,4,5,6,7,8,9]
+n_neighbors = [1,3,5,7,9]
 accuracies = []
 for n in n_neighbors: # find optimal n
     knn = KNeighborsClassifier(n_neighbors=n)
-    scores = cross_val_score(knn, np.squeeze(x_train), y_train, cv=10) # 10-fold cross-validation to find accuracy
-    accuracies.append(np.mean(scores)) # avg accuracy
+    
+    y_pred = cross_val_predict(knn, np.squeeze(x_train), y_train, cv=5)  # You can adjust the number of folds as needed
+    balanced_acc = balanced_accuracy_score(y_train, y_pred)
+    accuracies.append(balanced_acc)
 
 # use optimal n
 n_opt = n_neighbors[np.argmax(accuracies)]
@@ -45,6 +47,6 @@ knn_final.fit(x_train, y_train)
 
 # Evaluate accuracy
 y_pred = knn_final.predict(x_test)
-accuracy = accuracy_score(y_test, y_pred)
+accuracy = balanced_accuracy_score(y_test, y_pred)
 
 print(accuracy)
