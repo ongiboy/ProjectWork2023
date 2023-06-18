@@ -275,9 +275,7 @@ def noise_replace(x, ratio=0.05):
     return x_muted + ~mask * tensor_uniform # the points removed are replaced by noise
 
 def scale(x):
-    """ Multiplies frequency domain with a scalar (same as scaling time domain) """
-    scal = np.random.normal(1,0.2)
-    return x*scal
-
-X = torch.from_numpy(np.random.rand(2,1,100))
-print()
+    """ Multiplies each signal in frequency domain with a scalar (same as scaling time domain) """
+    #generates random numbers from a standard normal distribution, *0.2 + 1 scales and shifts the numbers.
+    scals = torch.randn(x.shape[0], 1, 1) * 0.2 + 1.0
+    return x * scals
