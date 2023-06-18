@@ -1,22 +1,15 @@
 import os
-import pickle
 import sys
 import random
-
 sys.path.append("..")
 import numpy as np
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from sklearn.metrics import roc_auc_score, classification_report, confusion_matrix, \
     average_precision_score, accuracy_score, precision_score,f1_score,recall_score, balanced_accuracy_score
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression
-
 from loss import * #NTXentLoss, NTXentLoss_poly
-from PCA import PCA_embeddings
 
 def one_hot_encoding(X):
     X = [int(x) for x in X]
@@ -47,17 +40,13 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
 
         for epoch in range(1, config.num_epoch + 1):
             # Train and validate
-            """Train. In fine-tuning, this part is also trained???"""
             if epoch == config.num_epoch:
                 get_embeds = True
                 print("We now want embeddings")
             train_loss, train_acc, train_auc, loss_val, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
                                                               train_dl, loss_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
-            # train_loss, train_acc, train_auc, loss_val, (train_loss_t,train_loss_f,train_loss_c,train_loss_TF), (z_t, z_t_aug, z_f, z_f_aug) = model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion,
-            #                                                   train_dl, loss_dl, config, device, training_mode, model_F=model_F, model_F_optimizer=model_F_optimizer, get_embeds=get_embeds)
 
-
-            # Plots
+            # Saving values for plots
             pretrain_loss_list.append(train_loss.item())
             pretrain_loss_t.append(train_loss_t.item())
             pretrain_loss_f.append(train_loss_f.item())
@@ -70,19 +59,6 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
             logger.debug(f'\nPre-training Epoch : {epoch}\n'
                          f'Train Loss     : {train_loss:.4f}\t | \tTrain Accuracy     : {train_acc:2.4f}\t | \tTrain AUC : {train_auc:2.4f}\n'
                          )
-
-        # # Plots
-        # logger.debug("\n Saved PCA embeddings and labels from last epoch, pretrain")
-        # z_t = z_t[0].detach().cpu().numpy()
-        # z_t_aug = z_t_aug[0].detach().cpu().numpy()
-        # z_f = z_f[0].detach().cpu().numpy()
-        # z_f_aug = z_f_aug[0].detach().cpu().numpy()
-        # embed_name = str(random.random())[2:6] # give random name so it doesnt get overwritten
-        # logger.debug(f"embed name from this run: {embed_name}")
-        # np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t", z_t)
-        # np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_t_aug", z_t_aug)
-        # np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f", z_f)
-        # np.save(f"code/PCA_embeddings/pretraining/{embed_name}_z_f_aug", z_f_aug)
 
         logger.debug("\nTotal pre-training losses:")
         logger.debug("loss=%s",pretrain_loss_list)
@@ -98,8 +74,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         print('Pretrained model is stored at folder:{}'.format(experiment_log_dir+'saved_models'+'ckp_last.pt'))
 
     """Fine-tuning and Test"""
-    if training_mode != 'pre_train':  # no need to run the evaluation for self-supervised mode.
-        """fine-tune"""
+    if training_mode != 'pre_train': 
         print('Fine-tune  on Fine-tuning set')
         performance_list = []
         total_f1 = []
@@ -107,7 +82,7 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
         # Logistic regression classifier
         Clf_log = LogisticRegression(multi_class="multinomial")
 
-        # Plots
+        # List for plots
         finetune_loss_list = []
         finetune_acc_list = []
         test_loss_list = []
@@ -169,29 +144,16 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
                          f'finetune Loss  : {valid_loss:.4f}\t | \tfinetune Accuracy : {valid_acc:2.4f}\t | '
                          f'\tfinetune AUC : {valid_auc:2.4f} \t |finetune PRC: {valid_prc:0.4f} ')
 
-            # # save best fine-tuning model""
-            # global arch
-            # arch = 'sleepedf2eplipsy'
-            # if len(total_f1) == 0 or F1 > max(total_f1):
-            #     print('update fine-tuned model')
-            #     os.makedirs('experiments_logs/finetunemodel/', exist_ok=True)
-            #     torch.save(model.state_dict(), 'experiments_logs/finetunemodel/' + arch + '_model.pt')
-            #     torch.save(classifier.state_dict(), 'experiments_logs/finetunemodel/' + arch + '_classifier.pt')
-            # total_f1.append(F1)
-
-
-            # evaluate on the test set
+            # Evaluate on the test set
             """Testing set"""
             logger.debug('\nTest on Target datasts test set')
-            # model.load_state_dict(torch.load('experiments_logs/finetunemodel/' + arch + '_model.pt'))
-            # classifier.load_state_dict(torch.load('experiments_logs/finetunemodel/' + arch + '_classifier.pt'))
             test_loss, test_acc, test_auc, test_prc, emb_test, label_test, performance, clf_log_perf = model_test(model, temporal_contr_model, test_dl, config, device, training_mode,
                                                                 model_F=model_F, model_F_optimizer=model_F_optimizer,
                                                              classifier=classifier, classifier_optimizer=classifier_optimizer, clf2=Clf_log)
 
             performance_list.append(performance)
 
-            # Plots
+            # Saving values for plots
             finetune_loss_list.append(valid_loss.item())
             finetune_acc_list.append(valid_acc.item())
             test_loss_list.append(test_loss.item())
@@ -218,27 +180,21 @@ def Trainer(model,  temporal_contr_model, model_optimizer, temp_cont_optimizer, 
 
 def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optimizer, criterion, train_loader, loss_loader, config,
                    device, training_mode, model_F=None, model_F_optimizer=None, get_embeds=False):
+    
+    # Lists for plots
     total_loss = []
     total_acc = []
     total_auc = []
-
-    # Plots
     total_loss_t = []
     total_loss_f = []
     total_loss_c = [] 
     total_loss_TF = []
 
-    # if get_embeds:
-    #     data_list = []
-    #     data_f_list = []
-    #     aug1_list = []
-    #     aug1_f_list = []
-
     model.train()
     for batch_idx, (data, labels, aug1, data_f, aug1_f) in enumerate(train_loader):
-        data, labels = data.float().to(device), labels.long().to(device) # data: [128, 1, 178], labels: [128]
-        aug1 = aug1.float().to(device)  # aug1 = aug2 : [128, 1, 178]
-        data_f, aug1_f = data_f.float().to(device), aug1_f.float().to(device)  # aug1 = aug2 : [128, 1, 178]
+        data, labels = data.float().to(device), labels.long().to(device)
+        aug1 = aug1.float().to(device)  # aug1 = aug2
+        data_f, aug1_f = data_f.float().to(device), aug1_f.float().to(device)  # aug1 = aug2
 
         # optimizer
         model_optimizer.zero_grad()
@@ -247,17 +203,10 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         h_t, z_t, h_f, z_f=model(data, data_f)
         h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1, aug1_f)
 
-        # OBS, resampling ??
-        # if get_embeds:
-        #     data_list.append(data)
-        #     data_f_list.append(data_f)
-        #     aug1_list.append(aug1)
-        #     aug1_f_list.append(aug1_f)
-
         """Compute Pre-train loss"""
         """NTXentLoss: normalized temperature-scaled cross entropy loss. From SimCLR"""
         nt_xent_criterion = NTXentLoss_poly(device, config.batch_size, config.Context_Cont.temperature,
-                                       config.Context_Cont.use_cosine_similarity) # device, 128, 0.2, True
+                                       config.Context_Cont.use_cosine_similarity)
 
         loss_t = nt_xent_criterion(h_t, h_t_aug)
         loss_f = nt_xent_criterion(h_f, h_f_aug)
@@ -272,7 +221,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         loss.backward()
         model_optimizer.step()
 
-        # Plots
+        # Saving values for plots
         total_loss_t.append(loss_t.item())
         total_loss_f.append(loss_f.item())  
         total_loss_TF.append(l_TF.item())
@@ -285,9 +234,9 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
     val_count = 0
     for batch_idx, (data_val, _ , aug1_val, data_f_val, aug1_f_val) in enumerate(loss_loader):
         val_count += 1
-        data_val = data_val.float().to(device) # data: [128, 1, 178]
-        aug1_val = aug1_val.float().to(device)  # aug1 = aug2 : [128, 1, 178]
-        data_f_val, aug1_f_val = data_f_val.float().to(device), aug1_f_val.float().to(device)  # aug1 = aug2 : [128, 1, 178]
+        data_val = data_val.float().to(device)
+        aug1_val = aug1_val.float().to(device)  # aug1 = aug2 
+        data_f_val, aug1_f_val = data_f_val.float().to(device), aug1_f_val.float().to(device)  # aug1 = aug2
 
         
         h_t_val, z_t_val, h_f_val, z_f_val=model(data_val, data_f_val)
@@ -301,32 +250,11 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         loss_vals.append(loss_val)
         if val_count == 20:
             break
-    
-
-    # Plots (for last batch only)
-    # Create embeddings
-    # model.eval()
-    # z_t_list = []
-    # z_t_aug_list = []
-    # z_f_list = []
-    # z_f_aug_list = []
-    # if get_embeds:
-    #     print("############################ lets append it to list")
-    #     print(len(data_list))
-    #     for i in range(len(data_list)):
-    #         print(i)
-    #         h_t, z_t, h_f, z_f=model(data_list[i], data_f_list[i])
-    #         h_t_aug, z_t_aug, h_f_aug, z_f_aug=model(aug1_list[i], aug1_f_list[i])
-
-    #         z_t_list.append(z_t)
-    #         z_t_aug_list.append(z_t_aug)
-    #         z_f_list.append(z_f)
-    #         z_f_aug_list.append(z_f_aug)
 
     print('preptraining: overall loss:{}, l_t: {}, l_f:{}, l_c:{}'.format(loss,loss_t,loss_f, loss_c))
 
-    total_loss = torch.tensor(total_loss).mean()
-    # Plots
+    # average loss
+    ave_loss = torch.tensor(total_loss).mean()
     ave_loss_t = torch.tensor(total_loss_t).mean()
     ave_loss_f = torch.tensor(total_loss_f).mean()
     ave_loss_TF = torch.tensor(total_loss_TF).mean()
@@ -340,8 +268,7 @@ def model_pretrain(model, temporal_contr_model, model_optimizer, temp_cont_optim
         total_acc = torch.tensor(total_acc).mean()
         total_auc = torch.tensor(total_auc).mean()
     
-    # return total_loss, total_acc, total_auc, loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF), (z_t_list, z_t_aug_list, z_f_list, z_f_aug_list)
-    return total_loss, total_acc, total_auc, ave_loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF)
+    return ave_loss, total_acc, total_auc, ave_loss_val, (ave_loss_t, ave_loss_f, ave_loss_c, ave_loss_TF)
     
 
 def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device, training_mode, model_optimizer, model_F=None, model_F_optimizer=None,
@@ -380,8 +307,6 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
             z_t_aug_list.append(z_t_aug)
             z_f_list.append(z_f)
             z_f_aug_list.append(z_f_aug)
-            # labels_list
-            # pred_list
         
         for data, labels, aug1, data_f, aug1_f in test_dl: # Embeds of test data (before finetune)
             data, labels = data.float().to(device), labels.long().to(device)
@@ -403,7 +328,6 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
         data_f_list = []
         aug1_list = []
         aug1_f_list = []
-    #labels_list = []
     pred_list = []
     
     model.train()
@@ -419,10 +343,8 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
         aug1 = aug1.float().to(device)
         aug1_f = aug1_f.float().to(device)
 
-        # """if random initialization:"""
         model_optimizer.zero_grad()
         classifier_optimizer.zero_grad()
-        # model_F_optimizer.zero_grad()
 
         """Produce embeddings"""
         h_t, z_t, h_f, z_f=model(data, data_f)
@@ -441,13 +363,13 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
 
         """Add supervised classifier: 1) it's unique to finetuning. 2) this classifier will also be used in test"""
         fea_concat = torch.cat((z_t, z_f), dim=1)
-        predictions = classifier(fea_concat) # how to define classifier? MLP? CNN?
+        predictions = classifier(fea_concat)
         fea_concat_flat = fea_concat.reshape(fea_concat.shape[0], -1)
 
         # Log regr classifier
         clf2.fit(fea_concat.detach().cpu().numpy(), labels.detach().cpu().numpy())
 
-        loss_p = criterion(predictions, labels) # predictor loss, actually, here is training loss
+        loss_p = criterion(predictions, labels)
         lam = 0.2
         loss =  loss_p + (1-lam)*loss_c + lam*(loss_t + loss_f)
         acc_bs = labels.eq(predictions.detach().argmax(dim=1)).float().mean()
@@ -470,13 +392,11 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
             outs = np.append(outs, pred.cpu().numpy())
             trgs = np.append(trgs, labels.data.cpu().numpy())
 
-        # OBS, resampling ??
         if get_embeds==2:
             data_list.append(data)
             data_f_list.append(data_f)
             aug1_list.append(aug1)
             aug1_f_list.append(aug1_f)
-            #labels_list.append(labels)
 
         pred_list.append(np.argmax(pred_numpy, axis=1))
 
@@ -492,8 +412,6 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
             z_t_aug_list.append(z_t_aug)
             z_f_list.append(z_f)
             z_f_aug_list.append(z_f_aug)
-            # labels_list
-            # pred_list
         
         for data, labels_t, aug1, data_f, aug1_f in test_dl: # Embeds of test data (after finetune)
             data, labels_t = data.float().to(device), labels_t.long().to(device)
@@ -518,11 +436,6 @@ def model_finetune(model, temporal_contr_model, val_dl, test_dl, config, device,
     F1 = f1_score(labels_numpy, pred_numpy, average='macro', )  # labels=np.unique(ypred))
     print('Testing: Precision = %.4f | Recall = %.4f | F1 = %.4f' % (precision * 100, recall * 100, F1 * 100))
 
-    # """Save embeddings for visualization"""
-    # pickle.dump(features1_f, open('embeddings/fea_t_withLc.p', 'wb'))
-    # pickle.dump(fea_f, open('embeddings/fea_f_withLc.p', 'wb'))
-    # print('embedding saved')
-
     total_loss = torch.tensor(total_loss).mean()  # average loss
     total_acc = torch.tensor(total_acc).mean()  # average acc
     total_auc = torch.tensor(total_auc).mean()  # average acc
@@ -541,12 +454,10 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
     total_prc = []
     total_precision, total_recall, total_f1 = [], [], []
 
-    criterion = nn.CrossEntropyLoss() # This loss is not used in gradient. It means nothing.
+    criterion = nn.CrossEntropyLoss()
     outs = np.array([])
     trgs = np.array([])
     emb_test_all = []
-
-
 
     with torch.no_grad():
         labels_numpy_all, pred_numpy_all = np.zeros(1), np.zeros(1)
@@ -556,11 +467,10 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
             data, labels = data.float().to(device), labels.long().to(device)
             data_f = data_f.float().to(device)
 
-            """Add supervised classifier: 1) it's unique to finetuning. 2) this classifier will also be used in test"""
             h_t, z_t, h_f, z_f = model(data, data_f)
 
             fea_concat = torch.cat((z_t, z_f), dim=1)
-            predictions_test = classifier(fea_concat)  # how to define classifier? MLP? CNN?
+            predictions_test = classifier(fea_concat) 
             fea_concat_flat = fea_concat.reshape(fea_concat.shape[0], -1)
             emb_test_all.append(fea_concat_flat)
 
@@ -584,17 +494,10 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
                 prc_bs = average_precision_score(onehot_label.detach().cpu().numpy(), pred_numpy, average="macro")
 
                 pred_numpy = np.argmax(pred_numpy, axis=1)
-                # precision = precision_score(labels_numpy, pred_numpy, average='macro', )  # labels=np.unique(ypred))
-                # recall = recall_score(labels_numpy, pred_numpy, average='macro', )  # labels=np.unique(ypred))
-                # F1 = f1_score(labels_numpy, pred_numpy, average='macro', )  # labels=np.unique(ypred))
 
                 total_acc.append(acc_bs)
                 total_auc.append(auc_bs)
                 total_prc.append(prc_bs)
-                # total_precision.append(precision)
-                # total_recall.append(recall)
-                # total_f1.append(F1)
-
                 total_loss.append(loss.item())
                 pred = predictions_test.max(1, keepdim=True)[1]  # get the index of the max log-probability
                 outs = np.append(outs, pred.cpu().numpy())
@@ -623,9 +526,6 @@ def model_test(model, temporal_contr_model, test_dl,config,  device, training_mo
     log_perf = balanced_accuracy_score(labels_numpy_all, log_preds_all)
     print("log_reg_acc: ", log_perf)
 
-    # precision_mean = torch.tensor(total_precision).mean()
-    # recal_mean = torch.tensor(total_recall).mean()
-    # f1_mean = torch.tensor(total_f1).mean()
     performance = [acc * 100, precision * 100, recall * 100, F1 * 100, total_auc * 100, total_prc * 100]
     print('Testing: Acc=%.4f| Precision = %.4f | Recall = %.4f | F1 = %.4f | AUROC= %.4f | PRC=%.4f'
           % (acc*100, precision * 100, recall * 100, F1 * 100, total_auc*100, total_prc*100))

@@ -5,12 +5,11 @@ import numpy as np
 from datetime import datetime
 import argparse
 from utils import _logger, set_requires_grad
-# from models.TC import TC
 from utils import _calc_metrics, copy_Files
-from model import * # base_Model, base_Model_F, target_classifier
+from model import * 
 
 from dataloader import data_generator
-from trainer import Trainer, model_finetune, model_test #model_evaluate
+from trainer import Trainer, model_finetune, model_test
 
 
 # Args selections
@@ -26,7 +25,6 @@ parser.add_argument('--run_description', default='run1', type=str,
                     help='Experiment Description')
 parser.add_argument('--seed', default=0, type=int, help='seed value')
 
-# 1. self_supervised; 2. finetune (itself contains finetune and test)
 parser.add_argument('--training_mode', default='pre_train', type=str,
                     help='pre_train, fine_tune_test')
 
@@ -49,7 +47,7 @@ parser.add_argument('--info', default="", type=str,
                     help='Info')
 parser.add_argument('--new_augs', default="False", type=str,
                     help='Info')
-# args = parser.parse_args()
+
 args, unknown = parser.parse_known_args()
 
 # New parsers
@@ -58,7 +56,7 @@ info = args.info
 enable_new_augs = args.new_augs == "True"
 
 device = torch.device(args.device)
-# experiment_description = args.experiment_description
+
 sourcedata = args.pretrain_dataset
 targetdata = args.target_dataset
 experiment_description = str(sourcedata)+'_2_'+str(targetdata)
@@ -90,7 +88,6 @@ np.random.seed(SEED)
 #####################################################
 
 experiment_log_dir = os.path.join(logs_save_dir, experiment_description, run_description, training_mode + f"_seed_{SEED}")
-# 'experiments_logs/Exp1/run1/train_linear_seed_0'
 os.makedirs(experiment_log_dir, exist_ok=True)
 
 # loop through domains
@@ -100,7 +97,6 @@ src_counter = 0
 
 # Logging
 log_file_name = os.path.join(experiment_log_dir, f"logs_{datetime.now().strftime('%d_%m_%Y_%H_%M_%S')}.log")
-# 'experiments_logs/Exp1/run1/train_linear_seed_0/logs_14_04_2022_15_13_12.log'
 logger = _logger(log_file_name)
 logger.debug(f"Run description: {run_description}")
 logger.debug(f"We are using {device}")
@@ -113,20 +109,17 @@ logger.debug(f'Mode:    {training_mode}')
 logger.debug("=" * 45)
 
 # Load datasets
-sourcedata_path = f"datasets/{sourcedata}"  # './data/Epilepsy'
+sourcedata_path = f"datasets/{sourcedata}" 
 targetdata_path = f"datasets/{targetdata}"
-# for self-supervised, the data are augmented here. Only self-supervised learning need augmentation
+
 train_dl, loss_dl, valid_dl, test_dl = data_generator(sourcedata_path, targetdata_path, configs, training_mode, subset = subset, enable_new_augs=enable_new_augs)
 logger.debug("Data loaded ...")
 
-# Load Model
-"""Here are two models, one basemodel, another is temporal contrastive model"""
-# model = Time_Model(configs).to(device)
-# model_F = Frequency_Model(configs).to(device) #base_Model_F(configs).to(device) """here is right. No bug in this line.
+# Load Model and classifier
 TFC_model = TFC(configs).to(device)
 classifier = target_classifier(configs).to(device)
 
-temporal_contr_model = None #TC(configs, device).to(device)
+temporal_contr_model = None
 
 
 if training_mode == "fine_tune_test":
@@ -137,16 +130,15 @@ if training_mode == "fine_tune_test":
 
     pretrained_dict = chkpoint["model_state_dict"] # Time domain parameters
     model_dict = TFC_model.state_dict()
-    # pretrained_dict = remove_logits(pretrained_dict)
     model_dict.update(pretrained_dict)
     TFC_model.load_state_dict(model_dict)
 
 
 model_optimizer = torch.optim.Adam(TFC_model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
 classifier_optimizer = torch.optim.Adam(classifier.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
-temporal_contr_optimizer = None # torch.optim.Adam(temporal_contr_model.parameters(), lr=configs.lr, betas=(configs.beta1, configs.beta2), weight_decay=3e-4)
+temporal_contr_optimizer = None 
 
-if training_mode == "pre_train":  # to do it only once
+if training_mode == "pre_train":  # to save files once
     copy_Files(os.path.join(logs_save_dir, experiment_description, run_description), sourcedata)
 
 # Trainer

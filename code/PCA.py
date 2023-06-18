@@ -2,6 +2,8 @@ import numpy as np
 from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 
+## Create PCA embeddings for the point embeddings of the training and test set and plotting them##
+
 def PCA_embeddings(embeddings): # input numpy arrays, shape (x,2)
     #n_components is number of PC's
     pca = PCA(n_components=5)
@@ -24,11 +26,9 @@ if __name__ == "__main__":
         for p,plot in enumerate(["bef", "aft"]):
             #labels only needed if mode == finetune
             z_t = np.load("code/PCA_embeddings/{}/{}_{}{}_z_t.npy".format(mode,array_number,plot,test))
-            #z_t_aug = np.load(f"code/PCA_embeddings/{mode}/z_t_aug.npy")
             z_f = np.load("code/PCA_embeddings/{}/{}_{}{}_z_f.npy".format(mode,array_number,plot,test))
-            #z_f_aug = np.load(f"code/PCA_embeddings/{mode}/z_f_aug.npy")
             
-            embeddings = np.hstack((z_t, z_f))  # z_t_aug z_f_aug
+            embeddings = np.hstack((z_t, z_f)) 
             embeddings_pca = PCA_embeddings(embeddings)
 
             if mode == "finetuning":
@@ -38,9 +38,6 @@ if __name__ == "__main__":
                     mask = labels == label
                     # class coloring
                     axs[p,t].scatter(embeddings_pca[mask, PC[0]], embeddings_pca[mask, PC[1]], label=label, s=15)
-
-            # elif mode == "pretraining":
-            #     plt.scatter(embeddings_pca[:, 0], embeddings_pca[:, 1])
 
             axs[p,t].set_title("{} point embeddings {} finetuning".format(name_test[t], name_plot[p]))
     for ax in axs.flat:

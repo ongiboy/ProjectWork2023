@@ -2,7 +2,8 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
-#            "HAR", #6 "Gesture", and EXO another type: DOUBLE TENSORS
+## Script for inspecting the datasets ##
+
 datasets = ["SleepEEG", #0
             "Epilepsy", 
 

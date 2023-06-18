@@ -1,1 +1,1 @@
-This is a Project in self-supervised learning for time-series data by 3 good-looking DTU students, Christian, Daniel and Kavus.
+This is a Project in self-supervised learning for time-series data using a TF-C model. The code is based on the Github repository created by Zhang et al. https://github.com/mims-harvard/TFC-pretraining

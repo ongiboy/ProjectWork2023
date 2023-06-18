@@ -4,7 +4,8 @@ import numpy as np
 import math
 from augmentations import *
 import torch.fft as fft
-#remove .cuda in augmentations to plot !!!
+
+## Script for plotting the augmentations ##
 
 sleep_data = torch.load('datasets\\SleepEEG\\train.pt')
 x0 = sleep_data['samples'][:100]

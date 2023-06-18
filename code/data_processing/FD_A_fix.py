@@ -1,5 +1,7 @@
 import torch
 
+## Saving the FD datasets as the correct data type ##
+
 FDA_train = torch.load('datasets\\FD_A\\train.pt')
 FDA_val = torch.load('datasets\\FD_A\\val.pt')
 FDA_test = torch.load('datasets\\FD_A\\test.pt')

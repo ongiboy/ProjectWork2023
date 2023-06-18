@@ -4,6 +4,8 @@ from sklearn.metrics import balanced_accuracy_score
 import torch
 import numpy as np
 
+## Trains and tests a KNN classifier on the datasets using cross validation##
+
 datasets = ["SleepEEG", #0
             "Epilepsy", 
 

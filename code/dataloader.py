@@ -26,13 +26,13 @@ class Load_Dataset(Dataset):
             X_train = X_train.permute(0, 2, 1)
 
         """Align the TS length between source and target datasets"""
-        X_train = X_train[:, :1, :int(config.TSlength_aligned)] # take the first 178 samples
+        X_train = X_train[:, :1, :int(config.TSlength_aligned)]
 
         """Subset for debugging"""
         if subset == True:
             subset_size = target_dataset_size *10
             """if the dimension is larger than 178, take the first 178 dimensions. If multiple channels, take the first channel"""
-            X_train = X_train[:subset_size] #
+            X_train = X_train[:subset_size]
             y_train = y_train[:subset_size]
 
         if isinstance(X_train, np.ndarray):
@@ -45,15 +45,13 @@ class Load_Dataset(Dataset):
         """Transfer x_data to Frequency Domain. If use fft.fft, the output has the same shape; if use fft.rfft, 
         the output shape is half of the time window."""
 
-        window_length = self.x_data.shape[-1]
-        self.x_data_f = fft.fft(self.x_data).abs() #/(window_length) # rfft for real value inputs.
-        # self.x_data_f = self.x_data_f[:, :, 1:] # not a problem.
+        self.x_data_f = fft.fft(self.x_data).abs()
 
         self.len = X_train.shape[0]
         """Augmentation"""
         if training_mode == "pre_train":  # no need to apply Augmentations in other modes
             self.aug1 = DataTransform_TD(self.x_data, config, enable_new_augs=enable_new_augs)
-            self.aug1_f = DataTransform_FD(self.x_data_f, config, enable_new_augs=enable_new_augs) # [7360, 1, 90]
+            self.aug1_f = DataTransform_FD(self.x_data_f, config, enable_new_augs=enable_new_augs)
 
     def __getitem__(self, index):
         if self.training_mode == "pre_train":
@@ -73,13 +71,7 @@ def data_generator(sourcedata_path, targetdata_path, configs, training_mode, sub
     pretrain_loss_dataset = torch.load(os.path.join(sourcedata_path, "test.pt"))
     finetune_dataset = torch.load(os.path.join(targetdata_path, "train.pt"))
     test_dataset = torch.load(os.path.join(targetdata_path, "test.pt"))
-    """ Dataset notes:
-    Epilepsy: train_dataset['samples'].shape = torch.Size([7360, 1, 178]); binary labels [7360] 
-    valid: [1840, 1, 178]
-    test: [2300, 1, 178]. In test set, 1835 are positive sampels, the positive rate is 0.7978"""
-    """sleepEDF: finetune_dataset['samples']: [7786, 1, 3000]"""
 
-    # subset = True # if true, use a subset for debugging.
     train_dataset = Load_Dataset(train_dataset, configs, training_mode, target_dataset_size=configs.batch_size, subset=subset, enable_new_augs=enable_new_augs) # for self-supervised, the data are augmented here
     pretrain_loss_dataset = Load_Dataset(pretrain_loss_dataset, configs, training_mode, target_dataset_size=configs.batch_size, subset=subset, enable_new_augs=enable_new_augs)
     finetune_dataset = Load_Dataset(finetune_dataset, configs, training_mode, target_dataset_size=configs.target_batch_size, subset=subset, enable_new_augs=enable_new_augs)
