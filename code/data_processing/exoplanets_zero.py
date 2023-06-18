@@ -68,10 +68,10 @@ test_labels = test_combined.values[: , 0]
 
 
 # Convert features and labels to Torch tensors
-train_samples_tensor = torch.tensor(train_values).unsqueeze(1)
-train_labels_tensor = torch.tensor(train_labels)
-test_samples_tensor = torch.tensor(test_values).unsqueeze(1)
-test_labels_tensor = torch.tensor(test_labels)
+train_samples_tensor = torch.tensor(train_values, dtype=torch.long).unsqueeze(1)
+train_labels_tensor = torch.tensor(train_labels, dtype=torch.long)
+test_samples_tensor = torch.tensor(test_values, dtype=torch.long).unsqueeze(1)
+test_labels_tensor = torch.tensor(test_labels, dtype=torch.long)
 
 # Create dictionaries for train, validation, and test data
 train_data_dict = {"samples": train_samples_tensor, "labels": train_labels_tensor}
