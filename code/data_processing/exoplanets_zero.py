@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from process_functions import *
 
+## Processing the Exoplanets dataset and saving training and test set as pt files ##
+
 path = os.getcwd()
 path_train = f'{path}\datasets\Exoplanets\exoTrain.csv'
 path_test = f'{path}\datasets\Exoplanets\exoTest.csv'
@@ -26,7 +28,7 @@ data, labels = remove_outliers(data, labels)
 mean = np.mean(data, axis=1, keepdims=True)
 std = np.std(data, axis=1, keepdims=True)
 
-# Subtract the mean and divide by the standard deviation
+# Standardize by subtracting the mean and divide by the standard deviation
 data = (data - mean) / std
 
 
@@ -73,7 +75,7 @@ train_labels_tensor = torch.tensor(train_labels)
 test_samples_tensor = torch.tensor(test_values).unsqueeze(1)
 test_labels_tensor = torch.tensor(test_labels)
 
-# Create dictionaries for train, validation, and test data
+# Create dictionaries for train and test data
 train_data_dict = {"samples": train_samples_tensor, "labels": train_labels_tensor}
 test_data_dict = {"samples": test_samples_tensor, "labels": test_labels_tensor}
 

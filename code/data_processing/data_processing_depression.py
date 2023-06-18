@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Mar 21 13:26:21 2023
-
-@author: kavus
-"""
 import numpy as np
 import os
 import matplotlib.pyplot as plt
@@ -11,6 +5,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import torch
 from process_functions import check_consecutive_repeats
+
+## Processing the Depression dataset and saving training and test set as pt files ##
 
 np.random.seed(12)
 path = os.getcwd()
@@ -23,11 +19,9 @@ Depression_datasets = ["Depression_SleepEEG", "Depression_FD_A", "Depression_HAR
 TSlength_aligneds = [178, 5120, 206, 1500]  # needed for zero padding
 Segments_days_min = [(1, 8), (3, 1), (1, 7), (1, 1)]  # SLEEP = 180, FD_A = 4320, HAR = 205,7,  ECG = 1440
 
-# defining data
 for j in range(len(Depression_datasets)):
     num_days, num_min = Segments_days_min[j]
 
-    # defining data
     segment_length = 60*24 * num_days
     segmented_data_train = []
     segmented_data_test = []
@@ -112,7 +106,7 @@ for j in range(len(Depression_datasets)):
     np.random.shuffle(data_matrix_train)
     np.random.shuffle(data_matrix_test)
 
-    # Separate the features and labels for train, validation, and test sets
+    # Separate the features and labels for train and test sets
     train_features = data_matrix_train[:, 1:]
     train_labels = data_matrix_train[:, 0]
     test_features = data_matrix_test[:, 1:]
@@ -124,7 +118,7 @@ for j in range(len(Depression_datasets)):
     test_samples_tensor = torch.tensor(test_features).unsqueeze(1)
     test_labels_tensor = torch.tensor(test_labels)
 
-    # Create dictionaries for train, validation, and test data
+    # Create dictionaries for train and test data
     train_data_dict = {"samples": train_samples_tensor, "labels": train_labels_tensor}
     test_data_dict = {"samples": test_samples_tensor, "labels": test_labels_tensor}
 

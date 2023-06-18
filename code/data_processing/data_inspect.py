@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 
+## Script for inspecting the different datasets ##
+
 datasets = ["SleepEEG", #0
             "Epilepsy", 
 
